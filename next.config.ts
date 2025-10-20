@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   images : {
     domains: ['lh3.googleusercontent.com'],
     qualities: [50,100],
+    remotePatterns: [{
+      hostname: "a0.muscache.com",
+      protocol: "https",
+      port: "",
+    }
+    ]
   }
 };
 

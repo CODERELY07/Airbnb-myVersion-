@@ -1,10 +1,9 @@
 'use server'
-import { createClient } from "@/utils/supabase/server"
-import { create } from "domain";
+import { createClient } from "@/utils/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 
-export const getClientUserProfile = async () => {
-  
-  const supabase = await createClient();
+export const getClientUserProfile = async (supabase: ReturnType<typeof createServerClient>) => {
+  supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) return null;

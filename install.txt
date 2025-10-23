@@ -1,2 +1,0 @@
-npm i world-countries
-https://react-leaflet.js.org/docs/start-installation/

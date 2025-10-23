@@ -3,10 +3,20 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images : {
-    domains: ['lh3.googleusercontent.com'],
     qualities: [50,100],
-    remotePatterns: [{
+    remotePatterns: [
+    {
       hostname: "a0.muscache.com",
+      protocol: "https",
+      port: "",
+    },
+    {
+      hostname: "lh3.googleusercontent.com",
+      protocol: "https",
+      port: "",
+    },
+    {
+      hostname: "jdhqxdkqnhfartemppiq.supabase.co",
       protocol: "https",
       port: "",
     }

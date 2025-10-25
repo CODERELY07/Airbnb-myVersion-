@@ -92,3 +92,34 @@ export async function createLocation(formData: FormData) {
   
   return redirect("/");
 }
+
+export async function addToFavorite(formData: FormData) {
+  const listingId = formData.get("listingId") as string;
+  const userId = formData.get("userId") as string;
+  const pathName = formData.get("pathName") as string;
+
+
+  if (!listingId || !userId || !pathName) {
+    throw new Error("Missing required fields");
+  }
+
+ 
+  await serverCaller.listings.addToFavorite({
+    listingId, userId, pathName
+  })
+ 
+}
+
+export async function deleteFromFavorite(formData: FormData){
+    const favoriteId = formData.get('favoriteId') as string;
+    const pathName = formData.get('pathName') as string;
+    if(!favoriteId){
+      throw new Error(favoriteId);
+    }
+
+    await serverCaller.listings.removeFromFavorite({
+      favoriteId, pathName
+    })
+
+
+}

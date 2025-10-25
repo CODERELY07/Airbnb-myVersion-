@@ -7,6 +7,9 @@
 
   import { baseProcedure, createTRPCRouter } from '../init';
   import { createClient } from '@/utils/supabase/server';
+  import { addToFavorite } from '@/lib/supabase/listings';
+  import { revalidatePath } from 'next/cache';
+  import path from 'path';
 
 
   export const homeRouter = createTRPCRouter({
@@ -28,17 +31,6 @@
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
-
-        // if(existingListings){
-        //   return {id: existingListings.id, type: 'structure'};
-        // }
-        // if (fetchError && fetchError.code !== 'PGRST116') {
-        //   throw new TRPCError({
-        //     code: 'INTERNAL_SERVER_ERROR',
-        //     message: 'Failed to fetch Listings data',
-        //   });
-          
-        // }
       
         if (!existingListings) {
       
@@ -182,7 +174,7 @@
         const supabase = await createClient();
         const { userId, listingId, categoryName } = input;
         const {error } = await supabase.from('listings').update({
-          userId, categoryName, addedCategory: 'true'
+          userId, categoryName, addedCategory: 'true', user_id: userId
         }).eq('id', listingId);
 
         if(error){
@@ -200,23 +192,111 @@
         userId: z.string().optional(), 
       })
     ).query(async ({input}) => {
-      console.log(input);
+     
       const {searchParams} = input;
       const supabase = await createClient();
       
       let query = supabase
         .from('listings')
-        .select(`*`)
+        .select(`*, favorites(*)`)
         .eq('addedCategory', true)
         .eq('addedDescription', true)
         .eq('addedLocation', true)
         
-      
+        
       if (searchParams) {
         query = query.eq('categoryName', searchParams);
       }
 
       const {data, error} = await query;
+      //  console.log(JSON.stringify(data));
       return data;
+    }),
+    
+    fetchFavListings: baseProcedure.input(
+      z.object({
+        userId: z.string(), 
+      })
+    ).query(async ({input}) => {
+     
+      const {userId} = input;
+      const supabase = await createClient();
+      
+      let query = supabase
+        .from('favorites')
+        .select(`*, listings(*)`)
+        .eq('userId', userId)
+
+      const {data, error} = await query;
+      // console.log(data);
+      return data;
+    }),
+
+    getListingData: baseProcedure.input(
+      z.object({
+        listingId: z.string(), 
+      })
+    ).query(async ({input}) => {
+     
+      const {listingId} = input;
+      const supabase = await createClient();
+      
+      const {data, error} = await supabase
+        .from('listings')
+        .select(`*, users(*)`)
+        .eq('id', listingId).single()
+
+      const listing = data;
+      const user = data?.users;
+
+      // console.log("users", user)
+      // const user = await supabase.auth.getUser();
+      // const user = await supabase.from('')
+      return {listing, user};
+    }),
+
+    addToFavorite: baseProcedure.input(
+      z.object({
+        listingId : z.string(),
+        pathName: z.string(),
+        userId: z.string(),
+      })
+    ).mutation(async ({ input }) => {
+        const supabase = await createClient();
+        const {listingId, pathName, userId} = input
+        const {data, error} = await supabase.from('favorites').insert({
+          listingId,
+          userId
+        }).select();
+
+        if(error){
+          console.log("data", error) 
+        }
+
+        if(data){
+          revalidatePath(pathName);
+        }
+        
+    }),
+    removeFromFavorite: baseProcedure.input(
+      z.object({
+        favoriteId: z.string(),
+        pathName: z.string(),
+      })
+    ).mutation(async ({ input }) => {
+        const supabase = await createClient();
+        const {favoriteId, pathName} = input
+        const {data, error} = await supabase.from('favorites').delete().eq('id', favoriteId).select();
+
+       if (error) {
+          console.error("Error removing favorite:", error);
+          throw new Error(error.message);
+        }
+
+        if (data) {
+          revalidatePath(pathName);
+        }
+
+        return data;
     })
   })

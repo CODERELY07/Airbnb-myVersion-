@@ -14,9 +14,12 @@ async function ShowListings({ filter, userId }: { filter?: string; userId?: stri
   });
 
   if (!listings?.length) {
-    return <NoListings />;
+    return <NoListings           
+      title="No Listings for this Category..."
+      description="Please check other category!"
+    />;
   }
-
+ 
   return (
     <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-8">
       {listings.map((listing) => (
@@ -26,6 +29,11 @@ async function ShowListings({ filter, userId }: { filter?: string; userId?: stri
           imagePath={listing.photo}
           location={listing.country}
           price={listing.price}
+          userId={userId}
+          pathName='/'
+          favoriteId={listing.favorites[0]?.id}
+          isInFavoriteList={listing.favorites.length > 0 ? true : false}
+          listingId={listing.id}
         />
       ))}
     </div>
@@ -49,7 +57,7 @@ export default async function Home({
 }) {
   const userProfile = await getClientUserProfile();
 
-  const filter = searchParams?.filter;
+  const filter = await searchParams?.filter;
 
   return (
     <div className="container mx-auto px-5 lg:px-10">

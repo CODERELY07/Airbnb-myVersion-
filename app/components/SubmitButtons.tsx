@@ -1,4 +1,4 @@
-"use client";
+  "use client";
 
 import { Button } from "@/components/ui/button";
 import { Heart, Loader2 } from "lucide-react";
@@ -23,7 +23,7 @@ export function SubmitButtons() {
   );
 }
 
-export function AddToFavoriteButton() {
+export function AddToFavoriteButton({isFav} : {isFav: boolean}) {
   const { pending } = useFormStatus();
   return (
     <>
@@ -43,14 +43,14 @@ export function AddToFavoriteButton() {
           className="bg-primary-foreground"
           type="submit"
         >
-          <Heart className="w-4 h-4" />
+          <Heart className="w-4 h-4" fill={isFav ? '#E21C49' : 'white'}/>
         </Button>
       )}
     </>
   );
 }
 
-export function DeleteFromFavoriteButton() {
+export function  DeleteFromFavoriteButton() {
   const { pending } = useFormStatus();
   return (
     <>

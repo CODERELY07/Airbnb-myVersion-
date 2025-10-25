@@ -1,24 +1,54 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useCountries } from "../lib/getCountries"
+import { Heart } from "lucide-react"
+import { AddToFavoriteButton, DeleteFromFavoriteButton } from "./SubmitButtons"
+import { addToFavorite, deleteFromFavorite } from "@/lib/supabase/listings"
 
 interface ListingProps {
     imagePath: string,
     description: string,
     location: string,
-    price: number
+    price: number,
+    isInFavoriteList: boolean,
+    favoriteId: string,
+    listingId: string,
+    userId: string | undefined,
+    pathName: string
 }
-export function ListingCard({description, imagePath, location, price} : ListingProps){
+export function ListingCard({description, imagePath, location, price, userId, isInFavoriteList, favoriteId, listingId, pathName} : ListingProps){
     const {getCountryByValue} = useCountries();
     const  country = getCountryByValue(location);
-
     return (
         <div className="flex flex-col">
             <div className="relative h-72">
                 <Image src={`https://jdhqxdkqnhfartemppiq.supabase.co/storage/v1/object/public/images/${imagePath}`} alt='Listings' fill className="rounded-lg h-full object-cover"/>
+
+                {
+                    userId && (
+                        <div className="z-10 absolute top-2 right-2">
+                           {
+                            isInFavoriteList ? (
+                                <form action={deleteFromFavorite}>
+                                    <input type="hidden" name="favoriteId" value={favoriteId}/>
+                                    <input type="hidden" name="pathName" value={pathName} />
+                                    <DeleteFromFavoriteButton/>
+                                </form>
+                            ) : (
+                                <form action={addToFavorite}>
+                                    <input type="hidden" name="listingId" value={listingId}/>
+                                    <input type="hidden" name="userId" value={userId}/>
+                                    <input type="hidden" name="pathName" value={pathName} />
+                                    <AddToFavoriteButton isFav={isInFavoriteList}/>
+                                </form>
+                            )
+                           }
+                        </div>
+                    )
+                }   
             </div>
 
-            <Link href={"/"} className="mt-2">
+            <Link href={`/listings/${listingId}`} className="mt-2">
                 <h3 className="text-medium text-base" >{country?.flag} {country?.label} / {country?.region}</h3>
                 <p className="text-muted-foreground text-sm line-clamp-2">{description}</p>
                 <p className="pt-2 text-muted-foreground">

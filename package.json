@@ -27,6 +27,7 @@
     "lucide-react": "^0.546.0",
     "next": "15.5.5",
     "react": "^19.0.0-rc.1",
+    "react-day-picker": "^9.11.1",
     "react-dom": "^19.0.0-rc.1",
     "react-leaflet": "^5.0.0-rc.2",
     "server-only": "^0.0.1",

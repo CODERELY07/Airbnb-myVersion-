@@ -1,13 +1,10 @@
-  // server/routers/home.ts
-  // TODO:: It can insert now just follow the tutorial at 2:07:03
-  // but we're fixing this in our own next is we need after adding category go to the description
   import { z } from 'zod';
 
   import { TRPCError } from '@trpc/server';
 
   import { baseProcedure, createTRPCRouter } from '../init';
   import { createClient } from '@/utils/supabase/server';
-  import { addToFavorite } from '@/lib/supabase/listings';
+  import { addToFavorite, createReservation } from '@/lib/supabase/listings';
   import { revalidatePath } from 'next/cache';
   import path from 'path';
 
@@ -186,6 +183,7 @@
   });
 
   export const ListingsRouter = createTRPCRouter({
+  
     fetchListings: baseProcedure.input(
       z.object({
         searchParams: z.string().optional(), 
@@ -278,6 +276,7 @@
         }
         
     }),
+
     removeFromFavorite: baseProcedure.input(
       z.object({
         favoriteId: z.string(),
@@ -298,5 +297,72 @@
         }
 
         return data;
+    }),
+
+    createReservation: baseProcedure.input(
+      z.object({
+        userId: z.string(),
+        listingId: z.string(),
+        startDate: z.string(),
+        endDate : z.string()
+      })
+    ).mutation(async ({ input }) => {
+        const { userId, listingId, startDate, endDate } = input;
+        const supabase = await createClient();
+
+        const { data: existingReservations, error: fetchError } = await supabase
+          .from("reservation")
+          .select("*")
+          .eq("listingId", listingId).eq('userId', userId)
+
+        if (fetchError) {
+          console.error("Error checking existing reservations:", fetchError);
+          throw new Error("Unable to verify reservation availability");
+        }
+
+        if (existingReservations && existingReservations.length > 0) {
+          throw new Error("You already book this listings check your reservationa nd try again...");
+        }
+
+        const { data, error } = await supabase.from("reservation").insert([
+          { userId, listingId, startDate, endDate },
+        ]);
+
+        if (error) {
+          console.error("Error inserting reservation:", error);
+          throw new Error("Unable to create reservation.");
+        }
+    }),
+
+  // for calendar reservation
+  fetchReservation: baseProcedure.input(
+    z.object({
+      listingId: z.string(),
     })
-  })
+  )
+  .query(async ({input}) => {
+    const supabase = await createClient();
+    const {listingId} = input;
+    const { data, error } = await supabase.from('reservation').select('*').eq('listingId', listingId);
+
+    if (error) {
+      console.error('Error fetching reservations:', error);
+      throw new Error('Failed to fetch reservations');
+    }
+
+    return data;
+  }),
+  
+  getReservationListings: baseProcedure.input(
+      z.object({
+        userId: z.string(),
+      })
+    ).query(async ({input}) => {
+      const supabase = await createClient();
+      const {userId} = input; 
+      const {data, error} = await supabase.from('reservation').select('*, users(*), listings(*)').eq('userId', userId);
+
+      return data;
+  }),
+
+})

@@ -14,7 +14,8 @@ export default async function FavoriteRoute() {
 
    console.log(favListings);
     if (!favListings?.length) {
-        return <NoListings />;
+        return <NoListings  title="Hey you dont have any favorites"
+          description="Please add favorites to see them right here..."/>;
     }
   return (
     <section className="container mx-atuo px-5 lg:px-10 mt-10">

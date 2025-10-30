@@ -39,6 +39,7 @@ export default async function FavoriteRoute() {
                 pathName='/'
                 favoriteId={favListing.id}
                 isInFavoriteList={true}
+                title={favListing.title}
                 listingId={favListing.listings.id}
             />
           ))}

@@ -29,6 +29,7 @@ export default async function Reservation() {
               price={reservation.listings?.price ?? 0}
               userId={userId}
               pathName="/"
+              title={reservation.title}
               favoriteId={reservation.id}
               isInFavoriteList={true}
               listingId={reservation.listings?.id ?? ""}

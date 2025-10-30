@@ -80,16 +80,22 @@ export async function createDescription(formData: FormData){
 
 export async function createLocation(formData: FormData) {
   const listingId = formData.get("listingId") as string;
-  const countryValue = formData.get("countryValue") as string;
+  const regionCode = formData.get("regionCode") as string;
+  const provinceCode = formData.get("provinceCode") as string;
+  const munCityCode = formData.get("munCityCode") as string;
+  const barangayCode = formData.get("barangayCode") as string;
 
-   if (!listingId || !countryValue) {
+   if (!listingId || !regionCode || !provinceCode || !munCityCode || !barangayCode) {
     throw new Error("Missing required fields");
   }
 
   
   await serverCaller.createListing.createLocation({
     listingId,
-    countryValue, 
+    regionCode, 
+    provinceCode,
+    munCityCode,
+    barangayCode
   });
   
   return redirect("/");

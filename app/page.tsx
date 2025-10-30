@@ -30,6 +30,7 @@ async function ShowListings({ filter, userId }: { filter?: string; userId?: stri
           location={listing.country}
           price={listing.price}
           userId={userId}
+          title={listing.title}
           pathName='/'
           favoriteId={listing.favorites[0]?.id}
           isInFavoriteList={listing.favorites.length > 0 ? true : false}

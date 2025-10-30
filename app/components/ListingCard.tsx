@@ -4,6 +4,7 @@ import { useCountries } from "../lib/getCountries"
 import { Heart } from "lucide-react"
 import { AddToFavoriteButton, DeleteFromFavoriteButton } from "./SubmitButtons"
 import { addToFavorite, deleteFromFavorite } from "@/lib/supabase/listings"
+import { title } from "process"
 
 interface ListingProps {
     imagePath: string,
@@ -14,9 +15,10 @@ interface ListingProps {
     favoriteId: string,
     listingId: string,
     userId: string | undefined,
-    pathName: string
+    pathName: string,
+    title: string
 }
-export function ListingCard({description, imagePath, location, price, userId, isInFavoriteList, favoriteId, listingId, pathName} : ListingProps){
+export function ListingCard({description, imagePath, location, price, userId, isInFavoriteList, favoriteId, listingId, pathName, title} : ListingProps){
     const {getCountryByValue} = useCountries();
     const  country = getCountryByValue(location);
     return (
@@ -49,7 +51,7 @@ export function ListingCard({description, imagePath, location, price, userId, is
             </div>
 
             <Link href={`/listings/${listingId}`} className="mt-2">
-                <h3 className="text-medium text-base" >{country?.flag} {country?.label} / {country?.region}</h3>
+                <h3 className="text-medium text-base" >{title}</h3>
                 <p className="text-muted-foreground text-sm line-clamp-2">{description}</p>
                 <p className="pt-2 text-muted-foreground">
                     <span className="font-medium text-black">₱{price}</span> Night

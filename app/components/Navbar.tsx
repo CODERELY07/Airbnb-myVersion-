@@ -3,6 +3,7 @@ import Link from "next/link"
 import DesktopLogo from "./../../public/Airbnb_Logosvg.png";
 import MobileLogo from "./../../public/Airbnb_Logo_mobile.png";
 import NavUser from "./NavUser";
+import SearchBar from "./SearchBar";
 
 const Navbar = () => {
   return (
@@ -13,8 +14,8 @@ const Navbar = () => {
 
             <Image src={MobileLogo} alt="Dekstop Logo" className="w-12 block lg:hidden" width={200} height={200}/>
         </Link>
-        <div className="rounded-full border px-5 py-2">
-            <h1>Hello From the search</h1>
+        <div>
+            <SearchBar/>
         </div>
         <NavUser/>
       </div>

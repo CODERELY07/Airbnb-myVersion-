@@ -7,6 +7,8 @@
   import { addToFavorite, createReservation } from '@/lib/supabase/listings';
   import { revalidatePath } from 'next/cache';
   import path from 'path';
+import { create } from 'domain';
+import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } from '@/app/lib/locaitonHelpers';
 
 
   export const homeRouter = createTRPCRouter({
@@ -141,13 +143,16 @@
       createLocation: baseProcedure.input(
         z.object({
           listingId: z.string(),
-          countryValue: z.string(),
+          regionCode: z.string(),
+          provinceCode: z.string(),
+          munCityCode: z.string(),
+          barangayCode: z.string(),
         })
       ).mutation(async ({input}) => {
           const supabase = await createClient();
-          const {countryValue, listingId} = input;
+          const {regionCode, listingId, provinceCode , munCityCode, barangayCode} = input;
           const {error} = await supabase.from('listings').update({
-            country:countryValue, addedLocation: 'true'
+            barangayCode,regionCode,provinceCode,munCityCode, addedLocation: 'true'
           }).eq('id', listingId)
 
           if(error){
@@ -364,5 +369,108 @@
 
       return data;
   }),
+  searchListings: baseProcedure
+  .input(
+    z.object({
+      destination: z.string().optional(),
+      checkIn: z.string().optional(),
+      checkOut: z.string().optional(),
+      guests: z.number().optional(),
+      bedrooms: z.number().optional(),
+      bathrooms: z.number().optional(),
+      filter: z.string().optional(),
+    })
+  )
+  .query(async ({ input }) => {
+    const supabase = await createClient();
 
+
+    let query = supabase.from('listings').select('*');
+
+    if (input.destination) {
+      query = query.ilike('provinceCode', `%${input.destination}%`);
+    }
+    if (input.guests) {
+      query = query.gte('guests', input.guests);
+    }
+    if (input.bedrooms) {
+      query = query.gte('bedrooms', input.bedrooms);
+    }
+    if (input.bathrooms) {
+      query = query.gte('bathrooms', input.bathrooms);
+    }
+
+
+    const { data: allListings, error: listingsError } = await query;
+    if (listingsError) throw new Error(listingsError.message);
+
+  
+    if (!input.checkIn || !input.checkOut) {
+      return allListings;
+    }
+
+    const requestedStart = new Date(input.checkIn);
+    const requestedEnd = new Date(input.checkOut);
+
+    const { data: allReservations, error: reservationsError } = await supabase
+      .from('reservation')
+      .select('listingId, startDate, endDate');
+
+    if (reservationsError) throw new Error(reservationsError.message);
+
+    // Filter out listings that have overlapping reservations
+    const availableListings = allListings?.filter((listing) => {
+      const reservationsForListing = allReservations?.filter(
+        (r) => r.listingId === listing.id
+      );
+
+      const hasConflict = reservationsForListing?.some((reservation) => {
+        const reservationStart = new Date(reservation.startDate);
+        const reservationEnd = new Date(reservation.endDate);
+
+        return (
+          (requestedStart >= reservationStart && requestedStart <= reservationEnd) ||
+          (requestedEnd >= reservationStart && requestedEnd <= reservationEnd) ||
+          (requestedStart <= reservationStart && requestedEnd >= reservationEnd)
+        );
+      });
+
+      return !hasConflict;
+    });
+
+    return availableListings ?? [];
+  }),
+  
 })
+
+export const locationRouter = createTRPCRouter({
+  listUnique: baseProcedure.query(async () => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("regionCode, provinceCode, munCityCode, barangayCode")
+    .not("regionCode", "is", null)
+    .not("provinceCode", "is", null);
+
+  if (error) throw new Error(error.message);
+
+  const uniqueData = Array.from(
+    new Map(
+      data.map((item) => [
+        `${item.regionCode}-${item.provinceCode}-${item.munCityCode}-${item.barangayCode}`,
+        item,
+      ])
+    ).values()
+  );
+
+
+  const readable = uniqueData.map((item) => ({
+    provinceCode: item.provinceCode, 
+    provinceName: getProvinceName(item.regionCode, item.provinceCode),
+  }));
+
+  return readable;
+  }),
+
+});

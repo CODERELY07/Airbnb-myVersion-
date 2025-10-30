@@ -42,6 +42,7 @@ export default async function MyHomes() {
               location={listing.country as string}
               userId={userId}
               pathName="/my-homes"
+              title={listing.title}
               favoriteId={listing.favorites[0]?.id}
               isInFavoriteList={listing.favorites[0]?.length > 0 ? true : false}
             />

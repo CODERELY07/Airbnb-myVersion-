@@ -195,8 +195,8 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
         userId: z.string().optional(), 
       })
     ).query(async ({input}) => {
-     
-      const {searchParams} = input;
+      
+      const {searchParams, userId} = input;
       const supabase = await createClient();
       
       let query = supabase
@@ -211,9 +211,12 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
         query = query.eq('categoryName', searchParams);
       }
 
-      const {data, error} = await query;
-      //  console.log(JSON.stringify(data));
-      return data;
+      if(userId){
+        query = query.eq('userId', userId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data ?? []; 
     }),
     
     fetchFavListings: baseProcedure.input(
@@ -441,6 +444,165 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
     return availableListings ?? [];
   }),
   
+  // Add these mutations to your ListingsRouter
+
+updateListing: baseProcedure
+  .input(
+    z.object({
+      listingId: z.string(),
+      title: z.string().optional(),
+      description: z.string().optional(),
+      price: z.string().optional(),
+      bedrooms: z.string().optional(),
+      bathrooms: z.string().optional(),
+      guests: z.string().optional(),
+      photo: z.string().optional(),
+    })
+  )
+  .mutation(async ({ input }) => {
+    const supabase = await createClient();
+    const { listingId, ...updateData } = input;
+
+    // Filter out undefined values
+    const filteredData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, v]) => v !== undefined)
+    );
+
+    // Convert price to number if present
+    // if (filteredData.price) {
+    //   filteredData.price = Number(filteredData.price);
+    // }
+
+    const { error } = await supabase
+      .from("listings")
+      .update(filteredData)
+      .eq("id", listingId);
+
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message,
+      });
+    }
+  }),
+
+updateLocation: baseProcedure
+  .input(
+    z.object({
+      listingId: z.string(),
+      regionCode: z.string(),
+      provinceCode: z.string(),
+      munCityCode: z.string(),
+      barangayCode: z.string(),
+    })
+  )
+  .mutation(async ({ input }) => {
+    const supabase = await createClient();
+    const { listingId, regionCode, provinceCode, munCityCode, barangayCode } = input;
+
+    const { error } = await supabase
+      .from("listings")
+      .update({
+        barangayCode,
+        regionCode,
+        provinceCode,
+        munCityCode,
+      })
+      .eq("id", listingId);
+
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message,
+      });
+    }
+  }),
+
+deleteListing: baseProcedure
+  .input(
+    z.object({
+      listingId: z.string(),
+      userId: z.string(),
+    })
+  )
+  .mutation(async ({ input }) => {
+    const supabase = await createClient();
+    const { listingId, userId } = input;
+
+  
+    const { data: listing, error: fetchError } = await supabase
+      .from("listings")
+      .select("userId, photo")
+      .eq("id", listingId)
+      .eq('userId', userId)
+      .single();
+
+    if (fetchError || !listing) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Listing not found",
+      });
+    }
+
+    if (listing.userId !== userId) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You are not authorized to delete this listing",
+      });
+    }
+
+    // Delete the image from storage if it exists
+    if (listing.photo) {
+      const { error: storageError } = await supabase.storage
+        .from("images")
+        .remove([listing.photo]);
+
+      // Continue even if image deletion fails
+      if (storageError) {
+        console.error("Failed to delete image:", storageError);
+      }
+    }
+
+    // Delete the listing
+    const { error: deleteError } = await supabase
+      .from("listings")
+      .delete()
+      .eq("id", listingId).eq('userId', userId);
+
+    if (deleteError) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: deleteError.message,
+      });
+    }
+  }),
+
+// Add to CategoryRouter
+updateCategory: baseProcedure
+  .input(
+    z.object({
+      listingId: z.string(),
+      categoryName: z.string(),
+    })
+  )
+  .mutation(async ({ input }) => {
+    const supabase = await createClient();
+    const { listingId, categoryName } = input;
+
+    const { error } = await supabase
+      .from("listings")
+      .update({
+        categoryName,
+      })
+      .eq("id", listingId);
+
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message,
+      });
+    }
+  }),
 })
 
 export const locationRouter = createTRPCRouter({

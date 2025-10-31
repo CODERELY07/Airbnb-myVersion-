@@ -76,7 +76,7 @@ export default function ReservationCard({
           <ReservationSubmitButton />
         ) : (
           <Button className="w-full" asChild>
-            <Link href="/api/auth/login">Make a Reservation</Link>
+            <Link href="/">Make a Reservation</Link>
           </Button>
         )}
 

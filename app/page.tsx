@@ -10,12 +10,12 @@ import { getClientUserProfile } from '@/lib/supabase/auth';
 async function ShowListings({ filter, userId }: { filter?: string; userId?: string }) {
   const listings = await serverCaller.listings.fetchListings({
     searchParams: filter,
-    userId,
+    // userId,
   });
 
   if (!listings?.length) {
     return <NoListings           
-      title="No Listings for this Category..."
+      title="No Listings Available Listings..."
       description="Please check other category!"
     />;
   }

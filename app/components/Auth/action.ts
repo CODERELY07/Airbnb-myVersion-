@@ -25,7 +25,7 @@ const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: getURL(),
+      redirectTo: process.env.NEXT_PUBLIC_VERCEL_URL,
     },
   });
 

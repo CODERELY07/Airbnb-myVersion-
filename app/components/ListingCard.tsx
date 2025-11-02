@@ -56,7 +56,7 @@ export function ListingCard({description, imagePath, location, price, userId, is
                                 <input type="hidden" name="listingId" value={listingId}/>
                                 <input type="hidden" name="userId" value={userId}/>
                                 <input type="hidden" name="pathName" value={pathName} />
-                                <button type="submit" className="p-2 hover:scale-110 transition-transform">
+                                <button type="submit"  className="p-2 hover:scale-110 transition-transform">
                                     <Heart className="w-6 h-6 fill-white/70 text-white stroke-white stroke-[1.5]" />
                                 </button>
                             </form>

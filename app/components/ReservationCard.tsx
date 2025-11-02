@@ -163,7 +163,7 @@ export default function ReservationCard({
           </Button>
         ) : (
           <Button className="w-full text-sm sm:text-base py-5 sm:py-6" asChild>
-            <Link href="/login">Login to Make a Reservation</Link>
+            <Link href="/">Login to Make a Reservation</Link>
           </Button>
         )}
 

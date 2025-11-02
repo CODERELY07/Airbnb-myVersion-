@@ -68,14 +68,14 @@ export function UpdateListingCard({
   };
 
   return (
-    <div className="relative flex flex-col">
-      <div className="relative h-72">
+   <div className="flex flex-col group cursor-pointer max-w-[280px]">
+       <div className="relative aspect-square w-full overflow-hidden rounded-xl">
         <Image 
           src={`https://jdhqxdkqnhfartemppiq.supabase.co/storage/v1/object/public/images/${imagePath}`} 
           alt='Listings' 
           fill 
           className="rounded-lg h-full object-cover"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 280px"
         />
 
         {showActions && (
@@ -115,10 +115,13 @@ export function UpdateListingCard({
       </div>
 
       <Link href={`/listings/${listingId}`} className="mt-2">
-        <h3 className="text-medium text-base">{title}</h3>
-        <p className="text-muted-foreground text-sm line-clamp-2">{description}</p>
-        <p className="pt-2 text-muted-foreground">
-          <span className="font-medium text-black">₱{price}</span> Night
+        <h3 className="font-medium text-sm leading-snug text-black line-clamp-2">
+          {title}
+        </h3>
+        
+        <p className="-mt-1 text-muted-foreground">
+            <span className="font-medium text-xs">₱{price.toLocaleString()}</span>
+            <span className="font-normal text-xs "> for 2 nights</span>
         </p>
       </Link>
 

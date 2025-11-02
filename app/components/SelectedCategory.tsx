@@ -5,11 +5,11 @@ import { categoryItems } from "../lib/categoryItems";
 import Image from "next/image";
 import { useState } from "react";
 
-export function SelectedCategory() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+export function SelectedCategory({defaultCategory} : {defaultCategory?: string}) {
+  const [selectedCategory, setSelectedCategory] = useState<string>(defaultCategory || "");
 
   return (
-    <div className="grid grid-cols-4 gap-8 mt-10 w-3/5 mx-auto mb-36">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8 mt-6 sm:mt-10 w-11/12 sm:w-4/5 lg:w-3/5 mx-auto mb-24 sm:mb-36 px-4 sm:px-0">
     
       <input
         type="hidden"
@@ -32,15 +32,15 @@ export function SelectedCategory() {
             }`}
           >
             <Card>
-              <CardHeader className="flex flex-col items-center space-y-2">
+              <CardHeader className="flex flex-col items-center space-y-1 sm:space-y-2 p-3 sm:p-4 lg:p-6">
                 <Image
                   src={item.imageUrl}
                   alt={item.name}
                   height={32}
                   width={32}
-                  className="w-8 h-8"
+                  className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8"
                 />
-                <h3 className="font-medium">{item.title}</h3>
+                <h3 className="font-medium text-xs sm:text-sm lg:text-base text-center">{item.title}</h3>
               </CardHeader>
             </Card>
           </button>

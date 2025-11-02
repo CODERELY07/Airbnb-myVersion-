@@ -33,7 +33,7 @@ async function ShowSearchResults({
     filter: searchParams.filter,
   });
 
-  console.log(listings);
+  // console.log(listings);
 
   if (!listings?.length) {
     return (

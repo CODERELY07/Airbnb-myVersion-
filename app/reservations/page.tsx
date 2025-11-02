@@ -10,7 +10,7 @@ export default async function Reservation() {
   const reservations = await getReservationListings(userId);
 
   return (
-    <section className="container mx-auto px-5 lg:px-10 mt-10">
+    <section className="container mx-auto pb-10 px-5 lg:px-10 mt-10">
       <h2 className="text-3xl font-semibold tracking-tight">Your Reservations</h2>
 
       {reservations?.length === 0 ? (
@@ -19,7 +19,7 @@ export default async function Reservation() {
           description="You haven't made any reservations yet."
         />
       ) : (
-        <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 grid-cols-1 gap-8 mt-8">
+          <div className="grid grid-cols-2  sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
           {reservations?.map((reservation) => (
             <ListingCard
               key={reservation.id}
@@ -29,7 +29,7 @@ export default async function Reservation() {
               price={reservation.listings?.price ?? 0}
               userId={userId}
               pathName="/"
-              title={reservation.title}
+              title={reservation.listings.title}
               favoriteId={reservation.id}
               isInFavoriteList={true}
               listingId={reservation.listings?.id ?? ""}

@@ -29,7 +29,7 @@ export function UpdateListing({ listings, userId }: ListingGridProps) {
   }
 
   return (
-    <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 grid-cols-1 gap-8 mt-8">
+  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
       {listings.map((listing) => (
         <UpdateListingCard
           key={listing.id}

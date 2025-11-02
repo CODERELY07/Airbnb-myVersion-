@@ -276,7 +276,7 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
         }).select();
 
         if(error){
-          console.log("data", error) 
+          // console.log("data", error) 
         }
 
         if(data){

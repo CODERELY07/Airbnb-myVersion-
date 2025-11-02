@@ -1,3 +1,4 @@
+// Home page
 import { MapFilterItems } from './components/MapFilterItems';
 import { ListingCard } from './components/ListingCard';
 import { Suspense } from 'react';
@@ -15,13 +16,13 @@ async function ShowListings({ filter, userId }: { filter?: string; userId?: stri
 
   if (!listings?.length) {
     return <NoListings           
-      title="No Listings Available Listings..."
+      title="No Listings Available..."
       description="Please check other category!"
     />;
   }
  
   return (
-    <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-8">
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
       {listings.map((listing) => (
         <ListingCard
           key={listing.id}
@@ -43,7 +44,7 @@ async function ShowListings({ filter, userId }: { filter?: string; userId?: stri
 
 function SkeletonLoading() {
   return (
-    <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
       {Array.from({ length: 8 }).map((_, i) => (
         <SkeletonCard key={i} />
       ))}
@@ -54,14 +55,15 @@ function SkeletonLoading() {
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: { filter?: string };
+  searchParams: Promise<{ filter?: string }>;
 }) {
   const userProfile = await getClientUserProfile();
 
-  const filter = await searchParams?.filter;
+  const params = await searchParams;
+  const filter = params?.filter;
 
   return (
-    <div className="container mx-auto px-5 lg:px-10">
+    <div className="container mx-auto px-4 sm:px-5 lg:px-10">
       <MapFilterItems />
       <Suspense key={filter} fallback={<SkeletonLoading />}>
         <ShowListings filter={filter} userId={userProfile?.id} />

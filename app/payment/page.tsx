@@ -22,13 +22,13 @@ export default function PayButton() {
 
       const data = await res.json();
 
-      console.log("API Response:", data);
+      // console.log("API Response:", data);
 
       // Handle error response
       if (!res.ok || data.error) {
         const errorMessage = Array.isArray(data.error)
           ? data.error.map((e: any) => e.detail).join(", ")
-          : data.message || "Payment creation failed";
+          : "You already have a reservation for this listing. Please check your reservations.'";
         
         setError(errorMessage);
         setLoading(false);

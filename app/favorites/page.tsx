@@ -11,8 +11,6 @@ export default async function FavoriteRoute() {
 
   if (!userId) return redirect("/");
    const favListings = await serverCaller.listings.fetchFavListings({userId});
-
-   console.log(favListings);
     if (!favListings?.length) {
         return <NoListings  title="Hey you dont have any favorites"
           description="Please add favorites to see them right here..."/>;
@@ -27,7 +25,7 @@ export default async function FavoriteRoute() {
           description="Please add favorites to see them right here..."
         />
       ) : (
-        <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 grid-cols-1 gap-8 mt-8">
+       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
           {favListings.map((favListing) => (
             <ListingCard
                key={favListing.listings.id}
@@ -39,7 +37,7 @@ export default async function FavoriteRoute() {
                 pathName='/'
                 favoriteId={favListing.id}
                 isInFavoriteList={true}
-                title={favListing.title}
+                title={favListing.listings.title}
                 listingId={favListing.listings.id}
             />
           ))}

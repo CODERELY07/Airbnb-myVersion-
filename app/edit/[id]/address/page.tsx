@@ -33,7 +33,7 @@ export default function EditAddressRoute({
   params,
   initialData
 }: { 
-  params: { id: string };
+  params: Promise<{id: string}>;
   initialData?: {
     regionCode: string;
     provinceCode: string;
@@ -59,17 +59,17 @@ export default function EditAddressRoute({
     : munCityCode;
 
   const barangays = effectiveMunCityCode ? listBarangays(effectiveMunCityCode) : [];
-
+  const { id } = React.use(params);
   return (
     <>
-      <div className="w-3/5 mx-auto mb-5">
+      <div className="w-3/5 mx-auto mb-5 mt-4">
         <h2 className="text-3xl font-semibold tracking-tight transition-colors">
           Update your Home Location
         </h2>
       </div>
 
       <form action={updateListingLocation}>
-        <input type="hidden" name="listingId" value={params.id} />
+        <input type="hidden" name="listingId" value={id} />
         <input type="hidden" name="regionCode" value={regionCode} />
         <input type="hidden" name="provinceCode" value={provinceCode} />
         <input type="hidden" name="munCityCode" value={munCityCode} />

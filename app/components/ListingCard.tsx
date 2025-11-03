@@ -24,6 +24,7 @@ export function ListingCard({description, imagePath, location, price, userId, is
    
     return (
         <div className="flex flex-col group cursor-pointer max-w-[280px]">
+            <Link href={`/listings/${listingId}`} className="mt-1 ml-0.5 block">
             <div className="relative aspect-square w-full overflow-hidden rounded-xl">
                <Image 
                     src={`https://jdhqxdkqnhfartemppiq.supabase.co/storage/v1/object/public/images/${imagePath}`} 
@@ -65,7 +66,7 @@ export function ListingCard({description, imagePath, location, price, userId, is
                 )}   
             </div>
 
-            <Link href={`/listings/${listingId}`} className="mt-1 ml-0.5 block">
+           
                 <h3 className="font-medium text-sm leading-snug text-black line-clamp-2">
                     {title}
                 </h3>

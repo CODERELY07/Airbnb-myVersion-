@@ -69,6 +69,7 @@ export function UpdateListingCard({
 
   return (
    <div className="flex flex-col group cursor-pointer max-w-[280px]">
+      <Link href={`/listings/${listingId}`} className="mt-2">
        <div className="relative aspect-square w-full overflow-hidden rounded-xl">
         <Image 
           src={`https://jdhqxdkqnhfartemppiq.supabase.co/storage/v1/object/public/images/${imagePath}`} 
@@ -114,7 +115,7 @@ export function UpdateListingCard({
         )}
       </div>
 
-      <Link href={`/listings/${listingId}`} className="mt-2">
+   
         <h3 className="font-medium text-sm leading-snug text-black line-clamp-2">
           {title}
         </h3>

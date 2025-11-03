@@ -111,10 +111,10 @@ export async function POST(req: NextRequest) {
             currency: 'PHP',
             type: 'gcash',
             redirect: {
-              success: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/payment/success?reservation_id=${reservation.id}`,
-              failed: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/payment/failed?reservation_id=${reservation.id}`,
+              success: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://airbnb-simple-clone-gilt.vercel.app'}/payment/success?reservation_id=${reservation.id}`,
+              failed: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://airbnb-simple-clone-gilt.vercel.app'}/payment/failed?reservation_id=${reservation.id}`,
             },
-            // Store reservation metadata
+          
             billing: {
               name: user.email || 'Guest',
               email: user.email || '',

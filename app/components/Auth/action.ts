@@ -2,22 +2,6 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 
-// const getURL = () => {
-//   let url =
-//     process?.env?.NEXT_PUBLIC_SITE_URL ??
-//     process?.env?.NEXT_PUBLIC_VERCEL_URL ??
-//     'http://localhost:3000';
-
-
-//   if (!url.startsWith('http')) {
-//     url = `https://${url}`;
-//   }
-
-
-//   url = `${url.replace(/\/$/, '')}/auth/callback`;
-
-//   return url;
-// };
 
 const signInWithGoogle = async () => {
   const supabase = await createClient();
@@ -28,7 +12,7 @@ const signInWithGoogle = async () => {
       redirectTo: `https://airbnb-simple-clone-gilt.vercel.app/auth/callback`,
     },
   });
-  console.log( `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`);
+  // console.log( `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`);
 
 
   if (error) {

@@ -31,7 +31,8 @@ export default async function Reservation() {
               pathName="/"
               title={reservation.listings.title}
               favoriteId={reservation.id}
-              isInFavoriteList={true}
+              isInFavoriteList={false}
+              isFavRemove={true}
               listingId={reservation.listings?.id ?? ""}
             />
           ))}

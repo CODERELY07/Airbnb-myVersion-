@@ -368,7 +368,7 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
     ).query(async ({input}) => {
       const supabase = await createClient();
       const {userId} = input; 
-      const {data, error} = await supabase.from('reservation').select('*, users(*), listings(*)').eq('userId', userId);
+      const {data, error} = await supabase.from('reservation').select('*, users(*), listings(*), favorite(*)').eq('userId', userId);
 
       return data;
   }),

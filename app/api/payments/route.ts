@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
-import { BASE_URL, getNights } from '@/lib/utils';
+import { BASE_URL, getNights, isPaymentEnabled, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -13,6 +13,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Payment keys missing: don't create a reservation at all
+    if (!isPaymentEnabled()) {
+      return NextResponse.json(
+        { error: PAYMENT_UNAVAILABLE_MESSAGE },
+        { status: 503 }
       );
     }
 
@@ -109,16 +117,6 @@ export async function POST(req: NextRequest) {
       console.log('Reservation creation error:', reservationError);
       return NextResponse.json(
         { error: 'Failed to create reservation' },
-        { status: 500 }
-      );
-    }
-
-    if (!process.env.PAYMONGO_SECRET_KEY) {
-
-      await supabase.from('reservation').delete().eq('id', reservation.id);
-
-      return NextResponse.json(
-      { error: 'Payment configuration error' },
         { status: 500 }
       );
     }

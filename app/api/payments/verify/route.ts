@@ -1,11 +1,16 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { isPaymentEnabled, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
 
 // Called by /payment/success. Confirms the GCash payment with PayMongo
 // on the server before marking the reservation as paid.
 export async function POST(req: NextRequest) {
   try {
+    if (!isPaymentEnabled()) {
+      return NextResponse.json({ error: PAYMENT_UNAVAILABLE_MESSAGE }, { status: 503 });
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 

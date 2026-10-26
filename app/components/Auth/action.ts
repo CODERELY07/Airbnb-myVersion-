@@ -2,6 +2,7 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { BASE_URL } from "@/lib/utils"
+import demoAccounts from "@/lib/demoAccounts.json"
 
 
 const signInWithGoogle = async () => {
@@ -27,9 +28,32 @@ const signInWithGoogle = async () => {
   }
 };
 
+// Portfolio demo login. The password stays on the server (DEMO_ACCOUNT_PASSWORD).
+const signInAsDemo = async (role: string) => {
+  const account = demoAccounts.find((a) => a.role === role);
+  const password = process.env.DEMO_ACCOUNT_PASSWORD;
+
+  if (!account || !password) {
+    return { error: 'Demo accounts are not available right now.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: account.email,
+    password,
+  });
+
+  if (error) {
+    console.error('Demo sign-in error:', error);
+    return { error: 'Demo accounts are not available right now.' };
+  }
+
+  return { success: true };
+};
+
 const signOut = async () => {
   const supabase = await createClient();
   await supabase.auth.signOut();
 };
 
-export { signInWithGoogle, signOut };
+export { signInWithGoogle, signInAsDemo, signOut };

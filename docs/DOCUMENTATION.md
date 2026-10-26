@@ -60,7 +60,10 @@ components/
 lib/
   supabase/auth.ts            getClientUserProfile()
   supabase/listings.ts        Server Actions (create, edit, delete, favorites)
-  utils.ts                    cn(), BASE_URL, getImageUrl(), getNights()
+  utils.ts                    cn(), BASE_URL, getImageUrl(), getNights(), isPaymentEnabled()
+  demoAccounts.json           Demo account emails and labels (no passwords)
+scripts/
+  create-demo-accounts.mjs    Creates or resets the demo users
 trpc/
   init.ts  server.tsx  client.tsx  query-client.ts
   routers/_app.ts             Root router
@@ -145,6 +148,12 @@ A listing appears publicly only when all three `added*` flags are `true`.
 `/auth/callback?code=…` → `exchangeCodeForSession` → redirect home.
 The trigger creates the `public.users` row.
 
+### Demo login
+`AuthForm` → `signInAsDemo(role)` (server action) → `signInWithPassword` with the email from
+`lib/demoAccounts.json` and the password from `DEMO_ACCOUNT_PASSWORD` → full page reload.
+`npm run demo:accounts` (`scripts/create-demo-accounts.mjs`) creates or resets these users with the
+service role key. If the password env is missing, the modal shows *"Demo accounts are not available right now."*
+
 ### Create a listing
 1. **Airbnb your Home** (`NavUser`) calls `createListing.createListing`. It reuses your last
    unfinished listing or inserts a new empty one, then sends you to the next step.
@@ -173,6 +182,11 @@ Browser ──► PayMongo GCash page
                         → payment status must be "paid" → sets isPaid = true
    failed  ─► /payment/failed  → deletes the unpaid reservation
 ```
+
+**Fallback:** `isPaymentEnabled()` in `lib/utils.ts` is true only when both
+`PAYMONGO_SECRET_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are set. If not, the listing page disables
+**Reserve** and shows *"Online payment is not available right now."*, and both payment routes return
+`503` with the same message without creating a reservation.
 
 ## 5. tRPC API
 
@@ -223,8 +237,9 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 | `NEXT_PUBLIC_SUPABASE_URL` | yes | all Supabase clients, image URLs |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes | all Supabase clients |
 | `SUPABASE_SERVICE_ROLE_KEY` | **no** | `utils/supabase/admin.ts` |
-| `PAYMONGO_SECRET_KEY` | **no** | `/api/payments`, `/api/payments/verify` |
+| `PAYMONGO_SECRET_KEY` | **no** | `/api/payments`, `/api/payments/verify` (optional) |
 | `NEXT_PUBLIC_BASE_URL` | yes | OAuth and payment redirects (`lib/utils.ts`) |
+| `DEMO_ACCOUNT_PASSWORD` | **no** | `signInAsDemo`, `scripts/create-demo-accounts.mjs` (optional) |
 
 ## 9. Troubleshooting
 
@@ -236,4 +251,5 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 | `new row violates row-level security policy` | You're not logged in, or you're editing someone else's row. |
 | Photos don't load | Check that the `images` bucket exists and is public, and that `NEXT_PUBLIC_SUPABASE_URL` is right. |
 | Payment stays "Something went wrong" | Check `SUPABASE_SERVICE_ROLE_KEY` and `PAYMONGO_SECRET_KEY`, and that you authorized the test payment. |
-| `Payment configuration error` | `PAYMONGO_SECRET_KEY` is missing. |
+| "Online payment is not available right now." | `PAYMONGO_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` is missing. This is expected if you don't use payments. |
+| "Demo accounts are not available right now." | Set `DEMO_ACCOUNT_PASSWORD`, enable the Email provider, and run `npm run demo:accounts`. |

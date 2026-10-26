@@ -9,12 +9,13 @@ and book a stay with **GCash** through **PayMongo**.
 ## Features
 
 - Google sign-in (Supabase Auth)
+- One-click **demo accounts** (Demo Host and Demo Guest) for portfolio visitors
 - Create a listing in 3 steps: category → description and photo → address (Philippine regions, provinces, cities and barangays)
 - Edit and delete your own listings
 - Browse by category, search by province, dates, guests, bedrooms and bathrooms
 - Favorites
 - Reservation calendar that blocks already booked dates
-- GCash payment through PayMongo, verified on the server
+- GCash payment through PayMongo, verified on the server. Without PayMongo keys the app still works and shows *"Online payment is not available right now."*
 
 ## Tech stack
 
@@ -34,7 +35,7 @@ and book a stay with **GCash** through **PayMongo**.
 - Node.js 20 or newer
 - A free [Supabase](https://supabase.com) project
 - A Google Cloud OAuth client (for Google login)
-- A [PayMongo](https://paymongo.com) account (test keys are enough)
+- A [PayMongo](https://paymongo.com) account (test keys are enough). Optional.
 
 ### 2. Clone and install
 
@@ -73,16 +74,32 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API (anon / publishable key) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (service_role). **Secret, server only.** |
-| `PAYMONGO_SECRET_KEY` | PayMongo → Developers → API keys (`sk_test_...`) |
+| `PAYMONGO_SECRET_KEY` | PayMongo → Developers → API keys (`sk_test_...`). Optional. |
 | `NEXT_PUBLIC_BASE_URL` | `http://localhost:3000` locally, your domain in production |
+| `DEMO_ACCOUNT_PASSWORD` | Any long password you choose. Optional, needed for demo accounts. |
 
-### 6. Run
+### 6. Demo accounts (optional)
+
+Visitors can sign in with one click as **Demo Host** or **Demo Guest**, with no Google account needed.
+
+1. In Supabase, go to **Authentication → Sign In / Providers** and make sure **Email** is enabled.
+2. Set `DEMO_ACCOUNT_PASSWORD` in `.env.local`.
+3. Create the accounts:
+
+   ```bash
+   npm run demo:accounts
+   ```
+
+The accounts are listed in [`lib/demoAccounts.json`](lib/demoAccounts.json). The password
+stays on the server; the login buttons call a server action. Run the command again any time to reset the password.
+
+### 7. Run
 
 ```bash
 npm run dev
 ```
 
-Open http://localhost:3000, sign in with Google, then choose **Airbnb your Home** from the menu.
+Open http://localhost:3000, sign in with Google or a demo account, then choose **Airbnb your Home** from the menu.
 
 ## Scripts
 
@@ -92,11 +109,12 @@ Open http://localhost:3000, sign in with Google, then choose **Airbnb your Home*
 | `npm run build` | Production build |
 | `npm start` | Run the production build |
 | `npm run lint` | ESLint |
+| `npm run demo:accounts` | Create or reset the demo accounts |
 
 ## Deploy to Vercel
 
 1. Import the repo on [vercel.com/new](https://vercel.com/new).
-2. Add the 5 environment variables, and set `NEXT_PUBLIC_BASE_URL` to your Vercel URL.
+2. Add the environment variables (and `DEMO_ACCOUNT_PASSWORD` for demo logins), and set `NEXT_PUBLIC_BASE_URL` to your Vercel URL.
 3. Add `https://<your-vercel-url>/auth/callback` to the Supabase redirect URLs.
 4. Deploy.
 

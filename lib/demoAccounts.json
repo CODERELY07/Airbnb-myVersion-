@@ -1,0 +1,14 @@
+[
+  {
+    "role": "host",
+    "label": "Demo Host",
+    "email": "demo.host@example.com",
+    "description": "Create and manage listings"
+  },
+  {
+    "role": "guest",
+    "label": "Demo Guest",
+    "email": "demo.guest@example.com",
+    "description": "Browse, favorite and book"
+  }
+]

@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { getNights } from '@/lib/utils';
+import { getNights, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
 
 export default function ReservationCard({
   userId,
@@ -10,12 +10,14 @@ export default function ReservationCard({
   checkOut,
   listingPrice,
   listingId,
+  paymentsEnabled = true,
 }: {
   userId: string;
   checkIn?: Date;
   checkOut?: Date;
   listingPrice: number;
   listingId: string;
+  paymentsEnabled?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +124,11 @@ export default function ReservationCard({
           </div>
         )}
 
-        {userId ? (
+        {!paymentsEnabled ? (
+          <Button className="w-full text-sm sm:text-base py-5 sm:py-6" disabled>
+            Reserve
+          </Button>
+        ) : userId ? (
           <Button
             className="w-full text-sm sm:text-base py-5 sm:py-6"
             onClick={handlePayment}
@@ -159,7 +165,7 @@ export default function ReservationCard({
         )}
 
         <p className="text-center text-gray-600 text-xs sm:text-sm mt-3">
-          {userId ? "You'll be redirected to GCash to complete your Reservation" : "Please login to continue"}
+          {!paymentsEnabled ? PAYMENT_UNAVAILABLE_MESSAGE : userId ? "You'll be redirected to GCash to complete your Reservation" : "Please login to continue"}
         </p>
       </div>
     </div>

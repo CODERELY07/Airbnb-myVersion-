@@ -1,9 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithGoogle } from './action';
+import { signInAsDemo, signInWithGoogle } from './action';
+import demoAccounts from '@/lib/demoAccounts.json';
 
 const AuthForm = ({toggleClick} : {toggleClick : () => void}) => {
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
+  const [demoError, setDemoError] = useState<string | null>(null);
+
+  const handleDemoLogin = async (role: string) => {
+    setDemoLoading(role);
+    setDemoError(null);
+
+    const result = await signInAsDemo(role);
+
+    if (result.error) {
+      setDemoError(result.error);
+      setDemoLoading(null);
+      return;
+    }
+
+    // full reload so the navbar picks up the new session
+    window.location.href = '/';
+  };
+
   return (
     <>
     <div className='bg-black opacity-25 h-screen w-full absolute left-0 top-0'></div>
@@ -38,6 +58,33 @@ const AuthForm = ({toggleClick} : {toggleClick : () => void}) => {
               />
               Continue with Google
             </button>
+
+            {/* Demo accounts for the portfolio */}
+            <div className="flex items-center gap-3 pt-2">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs text-gray-500">or try a demo account</span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.role}
+                  onClick={() => handleDemoLogin(account.role)}
+                  disabled={demoLoading !== null}
+                  className="flex flex-col items-center border border-gray-300 hover:bg-gray-50 rounded-lg py-3 px-2 transition disabled:opacity-50"
+                >
+                  <span className="font-medium text-sm text-gray-800">
+                    {demoLoading === account.role ? 'Signing in...' : account.label}
+                  </span>
+                  <span className="text-xs text-gray-500">{account.description}</span>
+                </button>
+              ))}
+            </div>
+
+            {demoError && (
+              <p className="text-xs text-red-600 text-center">{demoError}</p>
+            )}
 
             {/* <button className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-3 px-4 rounded-lg transition">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">

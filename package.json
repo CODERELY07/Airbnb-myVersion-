@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "demo:accounts": "node --env-file=.env.local scripts/create-demo-accounts.mjs"
   },
   "dependencies": {
     "@dctsph/psgc": "^1.1.0",

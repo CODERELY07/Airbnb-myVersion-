@@ -11,7 +11,7 @@ import CalendarReservation from '@/components/CalendarReservation';
 import ReservationCard from '@/app/components/ReservationCard';
 import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } from '../lib/locaitonHelpers';
 
-export default function ListingClient({ listingData, userData, client }: any) {
+export default function ListingClient({ listingData, userData, client, paymentsEnabled }: any) {
   // hooks must run before any early return
   const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
@@ -129,6 +129,7 @@ export default function ListingClient({ listingData, userData, client }: any) {
             checkOut={dateRange.to}
             listingPrice={listingData?.price}
             listingId={listingData.id}
+            paymentsEnabled={paymentsEnabled}
           />
         </div>
       </div>

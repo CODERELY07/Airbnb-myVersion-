@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import Image from "next/image";
+import { getImageUrl } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -72,7 +73,7 @@ export function UpdateListingCard({
       <Link href={`/listings/${listingId}`} className="mt-2">
        <div className="relative aspect-square w-full overflow-hidden rounded-xl">
         <Image 
-          src={`https://jdhqxdkqnhfartemppiq.supabase.co/storage/v1/object/public/images/${imagePath}`} 
+          src={getImageUrl(imagePath)} 
           alt='Listings' 
           fill 
           className="rounded-lg h-full object-cover"

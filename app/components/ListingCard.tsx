@@ -4,6 +4,7 @@ import { useCountries } from "../lib/getCountries"
 import { Heart } from "lucide-react"
 import { AddToFavoriteButton, DeleteFromFavoriteButton } from "./SubmitButtons"
 import { addToFavorite, deleteFromFavorite } from "@/lib/supabase/listings"
+import { getImageUrl } from "@/lib/utils"
 
 interface ListingProps {
     imagePath: string,
@@ -30,11 +31,10 @@ export function ListingCard({description, imagePath, location, price, userId, is
             <div className="relative aspect-square w-full overflow-hidden rounded-xl">
                 <Link href={`/listings/${listingId}`} className="mt-1 ml-0.5 block">
                 <Image 
-                        src={`https://jdhqxdkqnhfartemppiq.supabase.co/storage/v1/object/public/images/${imagePath}`} 
+                        src={getImageUrl(imagePath)} 
                         alt='Listings' 
                         fill 
                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 280px"
-                        priority
                         className="rounded-xl object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                 </Link>

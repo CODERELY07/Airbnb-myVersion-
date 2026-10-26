@@ -1,7 +1,6 @@
 import { CreationBottomBar } from "@/app/components/CreationBottomBar";
 import { SelectedCategory } from "@/app/components/SelectedCategory";
-import { updateListingCategory } from "@/lib/supabase/listings";
-import { serverCaller } from "@/trpc/server";
+import { getOwnListing, updateListingCategory } from "@/lib/supabase/listings";
 import { redirect } from "next/navigation";
 
 export default async function EditStructureRoute({ 
@@ -11,12 +10,11 @@ export default async function EditStructureRoute({
 }) {
   const { id } = await params;
 
-  // Fetch existing listing data
-  const listings = await serverCaller.listings.fetchListings({});
-  const listing = listings.find((l) => l.id === id);
+  // Fetch only this listing, and only if you own it
+  const listing = await getOwnListing(id);
 
   if (!listing) {
-    return redirect("/my-homes");
+    return redirect("/my-listings");
   }
 
   return (

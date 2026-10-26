@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { getNights } from '@/lib/utils';
 
 export default function ReservationCard({
   userId,
@@ -21,8 +22,7 @@ export default function ReservationCard({
 
   const { nights, totalPrice } = useMemo(() => {
     if (!checkIn || !checkOut) return { nights: 0, totalPrice: 0 };
-    const diffTime = checkOut.getTime() - checkIn.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = getNights(checkIn, checkOut);
     return { nights: diffDays, totalPrice: diffDays * listingPrice };
   }, [checkIn, checkOut, listingPrice]);
 
@@ -36,32 +36,23 @@ export default function ReservationCard({
       setLoading(true);
       setError(null);
 
-      const amountInCentavos = Math.round(totalPrice * 100);
-
-      // console.log('Initiating payment for:', amountInCentavos, 'centavos');
-
       const res = await fetch('/api/payments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // price is calculated on the server
         body: JSON.stringify({
-          amount: amountInCentavos,
           listingId,
-          userId,
           checkIn: checkIn.toISOString(),
           checkOut: checkOut.toISOString(),
-          nights,
-          totalPrice,
         }),
       });
 
       const data = await res.json();
 
-      console.log('API Response:', data);
-
       if (!res.ok || data.error) {
         const errorMessage = Array.isArray(data.error)
           ? data.error.map((e: any) => e.detail).join(', ')
-          : data.message || 'You already have a reservation for this listing. Please check your reservations.';
+          : data.error || 'You already have a reservation for this listing. Please check your reservations.';
         
         setError(errorMessage);
         setLoading(false);

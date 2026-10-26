@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getReservationListings } from "@/lib/supabase/listings";
 import { ListingCard } from "../components/ListingCard";
 import { NoListings } from "../components/NoListings";
@@ -6,6 +7,8 @@ import { getClientUserProfile } from "@/lib/supabase/auth";
 export default async function Reservation() {
   const userProfile = await getClientUserProfile();
   const userId = userProfile?.id as string;
+
+  if (!userId) return redirect("/");
 
   const reservations = await getReservationListings(userId);
 

@@ -1,6 +1,7 @@
 'use server'
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
+import { BASE_URL } from "@/lib/utils"
 
 
 const signInWithGoogle = async () => {
@@ -9,7 +10,7 @@ const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `https://airbnb-simple-clone-gilt.vercel.app/auth/callback`,
+      redirectTo: `${BASE_URL}/auth/callback`,
     },
   });
   // console.log( `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`);
@@ -21,7 +22,6 @@ const signInWithGoogle = async () => {
   }
 
   if (data?.url) {
-    console.log("data", data);
     redirect(data.url);
       
   }

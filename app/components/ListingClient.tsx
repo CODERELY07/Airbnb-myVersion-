@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { getImageUrl } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { NoListings } from '@/app/components/NoListings';
 import { Separator } from '@/components/ui/separator';
@@ -11,15 +12,16 @@ import ReservationCard from '@/app/components/ReservationCard';
 import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } from '../lib/locaitonHelpers';
 
 export default function ListingClient({ listingData, userData, client }: any) {
-  if (!listingData) return <NoListings />;
-
+  // hooks must run before any early return
   const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined,
   });
 
-  const regionName = getRegionName(listingData.region);
-  const provinceName = getProvinceName(listingData.region, listingData.provinceCode);
+  if (!listingData) return <NoListings />;
+
+  const regionName = getRegionName(listingData.regionCode);
+  const provinceName = getProvinceName(listingData.regionCode, listingData.provinceCode);
   const cityName = getMunicipalityName(listingData.provinceCode, listingData.munCityCode);
   const barangayName = getBarangayName(listingData.munCityCode, listingData.barangayCode);
 
@@ -29,7 +31,7 @@ export default function ListingClient({ listingData, userData, client }: any) {
       <div className="relative h-64 sm:h-96 lg:h-[550px]">
         <Image
           alt="Image of Home"
-          src={`https://jdhqxdkqnhfartemppiq.supabase.co/storage/v1/object/public/images/${listingData?.photo}`}
+          src={getImageUrl(listingData?.photo)}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 75vw"
           className="rounded-lg h-full object-cover w-full"

@@ -5,6 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { trpc } from '@/trpc/client';
+import { getNights } from '@/lib/utils';
 
 export default function CalendarReservation({
   dateRange,
@@ -15,7 +16,7 @@ export default function CalendarReservation({
   setDateRange: React.Dispatch<React.SetStateAction<DateRange>>;
   listingId: string
 }) {
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2025, 10, 1));
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
 
   const { data: reservations = [], isLoading, error } =
@@ -58,10 +59,7 @@ export default function CalendarReservation({
 
     if (!dateRange.to) return fromDate;
 
-    const nights = Math.ceil(
-      (dateRange.to.getTime() - dateRange.from.getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
+    const nights = getNights(dateRange.from, dateRange.to);
 
     return `${nights} night${nights !== 1 ? 's' : ''} in Pasay`;
   };

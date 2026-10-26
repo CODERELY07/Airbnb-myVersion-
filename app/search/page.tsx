@@ -79,7 +79,7 @@ function SkeletonLoading() {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams?: Promise<SearchParams>;
 }) {
   const userProfile = await getClientUserProfile();
   const params = await searchParams || {};

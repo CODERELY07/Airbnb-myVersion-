@@ -4,11 +4,8 @@
 
   import { baseProcedure, createTRPCRouter } from '../init';
   import { createClient } from '@/utils/supabase/server';
-  import { addToFavorite, createReservation } from '@/lib/supabase/listings';
   import { revalidatePath } from 'next/cache';
-  import path from 'path';
-import { create } from 'domain';
-import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } from '@/app/lib/locaitonHelpers';
+import { getProvinceName } from '@/app/lib/locaitonHelpers';
 
 
   export const homeRouter = createTRPCRouter({
@@ -156,7 +153,7 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
           }).eq('id', listingId)
 
           if(error){
-            throw new Error('Error: ' , error);
+            throw new Error(error.message);
           }
       }),
 
@@ -180,7 +177,7 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
         }).eq('id', listingId);
 
         if(error){
-          throw new Error('Error: ' , error);
+          throw new Error(error.message);
         }
 
         
@@ -351,7 +348,7 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
   .query(async ({input}) => {
     const supabase = await createClient();
     const {listingId} = input;
-    const { data, error } = await supabase.from('reservation').select('*').eq('listingId', listingId);
+    const { data, error } = await supabase.from('reservation').select('startDate, endDate').eq('listingId', listingId);
 
     if (error) {
       console.error('Error fetching reservations:', error);
@@ -368,7 +365,7 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
     ).query(async ({input}) => {
       const supabase = await createClient();
       const {userId} = input; 
-      const {data, error} = await supabase.from('reservation').select('*, users(*), listings(*), favorite(*)').eq('userId', userId);
+      const {data, error} = await supabase.from('reservation').select('*, users(*), listings(*)').eq('userId', userId);
 
       return data;
   }),
@@ -388,7 +385,12 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
     const supabase = await createClient();
 
 
-    let query = supabase.from('listings').select('*');
+    let query = supabase
+      .from('listings')
+      .select('*')
+      .eq('addedCategory', true)
+      .eq('addedDescription', true)
+      .eq('addedLocation', true);
 
     if (input.destination) {
       query = query.ilike('provinceCode', `%${input.destination}%`);
@@ -412,34 +414,18 @@ import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } 
       return allListings;
     }
 
-    const requestedStart = new Date(input.checkIn);
-    const requestedEnd = new Date(input.checkOut);
-
-    const { data: allReservations, error: reservationsError } = await supabase
+    // Only load reservations that overlap the requested dates
+    const { data: bookedReservations, error: reservationsError } = await supabase
       .from('reservation')
-      .select('listingId, startDate, endDate');
+      .select('listingId')
+      .lte('startDate', input.checkOut)
+      .gte('endDate', input.checkIn);
 
     if (reservationsError) throw new Error(reservationsError.message);
 
     // Filter out listings that have overlapping reservations
-    const availableListings = allListings?.filter((listing) => {
-      const reservationsForListing = allReservations?.filter(
-        (r) => r.listingId === listing.id
-      );
-
-      const hasConflict = reservationsForListing?.some((reservation) => {
-        const reservationStart = new Date(reservation.startDate);
-        const reservationEnd = new Date(reservation.endDate);
-
-        return (
-          (requestedStart >= reservationStart && requestedStart <= reservationEnd) ||
-          (requestedEnd >= reservationStart && requestedEnd <= reservationEnd) ||
-          (requestedStart <= reservationStart && requestedEnd >= reservationEnd)
-        );
-      });
-
-      return !hasConflict;
-    });
+    const bookedIds = new Set(bookedReservations?.map((r) => r.listingId));
+    const availableListings = allListings?.filter((listing) => !bookedIds.has(listing.id));
 
     return availableListings ?? [];
   }),

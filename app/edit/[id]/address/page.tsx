@@ -31,22 +31,15 @@ import React from 'react';
 
 export default function EditAddressRoute({ 
   params,
-  initialData
 }: { 
   params: Promise<{id: string}>;
-  initialData?: {
-    regionCode: string;
-    provinceCode: string;
-    munCityCode: string;
-    barangayCode: string;
-  };
 }) {
   const regions = listRegions();
 
-  const [regionCode, setRegionCode] = useState(initialData?.regionCode || '');
-  const [provinceCode, setProvinceCode] = useState(initialData?.provinceCode || '');
-  const [munCityCode, setMunCityCode] = useState(initialData?.munCityCode || '');
-  const [barangayCode, setBarangayCode] = useState(initialData?.barangayCode || '');
+  const [regionCode, setRegionCode] = useState('');
+  const [provinceCode, setProvinceCode] = useState('');
+  const [munCityCode, setMunCityCode] = useState('');
+  const [barangayCode, setBarangayCode] = useState('');
 
   const provinces = regionCode ? listProvinces(regionCode) : [];
   const muncities = provinceCode ? listMuncities(provinceCode) : [];

@@ -4,8 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { updateListingDescription } from "@/lib/supabase/listings";
-import { serverCaller } from "@/trpc/server";
+import { getOwnListing, updateListingDescription } from "@/lib/supabase/listings";
 import { redirect } from "next/navigation";
 
 export default async function EditDescriptionPage({
@@ -15,8 +14,8 @@ export default async function EditDescriptionPage({
 }) {
   const { id } = await params;
 
-  const listings = await serverCaller.listings.fetchListings({});
-  const listing = listings.find((l) => l.id === id);
+  // Fetch only this listing, and only if you own it
+  const listing = await getOwnListing(id);
 
   if (!listing) {
     return redirect("/my-listings");

@@ -1,50 +1,62 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { BASE_URL, getNights } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    const {
-      amount,
-      listingId,
-      userId,
-      checkIn,
-      checkOut,
-      nights,
-      totalPrice,
-    } = await req.json();
+
+    // Only trust ids and dates from the client. Price is calculated here.
+    const { listingId, checkIn, checkOut } = await req.json();
 
     // Validate input
-    if (!amount || !listingId || !checkIn || !checkOut || !userId) {
+    if (!listingId || !checkIn || !checkOut) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Verify user matches
-    if (user.id !== userId) {
+    const nights = getNights(new Date(checkIn), new Date(checkOut));
+    if (!nights || nights <= 0) {
       return NextResponse.json(
-        { error: 'User mismatch' },
-        { status: 403 }
+        { error: 'Invalid dates' },
+        { status: 400 }
       );
     }
+
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('price')
+      .eq('id', listingId)
+      .single();
+
+    if (!listing?.price) {
+      return NextResponse.json(
+        { error: 'Listing not found' },
+        { status: 404 }
+      );
+    }
+
+    const totalPrice = nights * Number(listing.price);
+    const amount = Math.round(totalPrice * 100); // PayMongo uses centavos
 
     // Check if user already has a reservation for this listing
     const { data: existingReservations, error: fetchError } = await supabase
       .from("reservation")
       .select("id")
       .eq("listingId", listingId)
-      .eq("userId", userId)
+      .eq("userId", user.id)
       .limit(1);
 
     if (fetchError) {
@@ -57,16 +69,32 @@ export async function POST(req: NextRequest) {
 
     if (existingReservations && existingReservations.length > 0) {
       return NextResponse.json(
-        { error: '' },
+        { error: 'You already have a reservation for this listing. Please check your reservations.' },
         { status: 409 }
       );
     }
 
-    // Create reservation in Supabase 
+    // Check if the dates overlap someone else's reservation
+    const { data: overlapping } = await supabase
+      .from("reservation")
+      .select("id")
+      .eq("listingId", listingId)
+      .lt("startDate", checkOut)
+      .gt("endDate", checkIn)
+      .limit(1);
+
+    if (overlapping && overlapping.length > 0) {
+      return NextResponse.json(
+        { error: 'These dates are already booked. Please choose other dates.' },
+        { status: 409 }
+      );
+    }
+
+    // Create reservation in Supabase
     const { data: reservation, error: reservationError } = await supabase
       .from('reservation')
       .insert({
-        userId: userId,
+        userId: user.id,
         listingId: listingId,
         startDate: checkIn,
         endDate: checkOut,
@@ -86,9 +114,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (!process.env.PAYMONGO_SECRET_KEY) {
-    
+
       await supabase.from('reservation').delete().eq('id', reservation.id);
-      
+
       return NextResponse.json(
       { error: 'Payment configuration error' },
         { status: 500 }
@@ -111,17 +139,17 @@ export async function POST(req: NextRequest) {
             currency: 'PHP',
             type: 'gcash',
             redirect: {
-              success: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://airbnb-simple-clone-gilt.vercel.app'}/payment/success?reservation_id=${reservation.id}`,
-              failed: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://airbnb-simple-clone-gilt.vercel.app'}/payment/failed?reservation_id=${reservation.id}`,
+              success: `${BASE_URL}/payment/success?reservation_id=${reservation.id}`,
+              failed: `${BASE_URL}/payment/failed?reservation_id=${reservation.id}`,
             },
-          
+
             billing: {
               name: user.email || 'Guest',
               email: user.email || '',
             },
             metadata: {
               reservation_id: reservation.id,
-              user_id: userId,
+              user_id: user.id,
               listing_id: listingId,
             },
           },
@@ -130,17 +158,22 @@ export async function POST(req: NextRequest) {
     });
 
     const paymongoData = await paymongoResponse.json();
-    console.log('PayMongo response:', JSON.stringify(paymongoData, null, 2));
 
     if (paymongoData.errors) {
-      
+
       await supabase.from('reservation').delete().eq('id', reservation.id);
-      
+
       return NextResponse.json(
         { error: paymongoData.errors },
         { status: 400 }
       );
     }
+
+    // Save the source id so /api/payments/verify can confirm it later
+    await createAdminClient()
+      .from('reservation')
+      .update({ paymentSourceId: paymongoData.data.id })
+      .eq('id', reservation.id);
 
     return NextResponse.json(paymongoData, { status: 200 });
   } catch (err) {

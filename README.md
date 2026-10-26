@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Airbnb Clone (Philippines edition)
 
-## Getting Started
+A simple Airbnb clone built with **Next.js 15**, **Supabase** and **tRPC**.
+Hosts can list their home, guests can search by province and dates, save favorites,
+and book a stay with **GCash** through **PayMongo**.
 
-First, run the development server:
+**Live demo:** https://airbnb-simple-clone-gilt.vercel.app
+
+## Features
+
+- Google sign-in (Supabase Auth)
+- Create a listing in 3 steps: category → description and photo → address (Philippine regions, provinces, cities and barangays)
+- Edit and delete your own listings
+- Browse by category, search by province, dates, guests, bedrooms and bathrooms
+- Favorites
+- Reservation calendar that blocks already booked dates
+- GCash payment through PayMongo, verified on the server
+
+## Tech stack
+
+| Part | Tool |
+|---|---|
+| Framework | Next.js 15 (App Router, Server Actions) |
+| API | tRPC 11 + TanStack Query |
+| Database, auth, storage | Supabase (Postgres + RLS) |
+| Payments | PayMongo (GCash sources) |
+| UI | Tailwind CSS 4, shadcn/ui (Radix), lucide-react |
+| Maps and locations | Leaflet, `@jobuntux/psgc` |
+
+## Quick start
+
+### 1. Requirements
+
+- Node.js 20 or newer
+- A free [Supabase](https://supabase.com) project
+- A Google Cloud OAuth client (for Google login)
+- A [PayMongo](https://paymongo.com) account (test keys are enough)
+
+### 2. Clone and install
+
+```bash
+git clone https://github.com/CODERELY07/Airbnb-myVersion-.git
+cd Airbnb-myVersion-
+npm install
+```
+
+### 3. Create the database
+
+1. Open your Supabase project, then **SQL Editor → New query**.
+2. Paste the full contents of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**.
+
+This creates the tables, security rules (RLS), the trigger that copies Google users into
+`public.users`, and the public `images` storage bucket. It is safe to run again.
+
+### 4. Turn on Google login
+
+1. In Google Cloud Console create an **OAuth client ID** (Web application).
+   Add this as an authorized redirect URI:
+   `https://<your-project-ref>.supabase.co/auth/v1/callback`
+2. In Supabase, go to **Authentication → Sign In / Providers → Google**, enable it, and paste the client ID and secret.
+3. In Supabase, go to **Authentication → URL Configuration**:
+   - **Site URL:** `http://localhost:3000` (your Vercel URL in production)
+   - **Redirect URLs:** add `http://localhost:3000/auth/callback` and `https://<your-domain>/auth/callback`
+
+### 5. Environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Where to find it |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API (anon / publishable key) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (service_role). **Secret, server only.** |
+| `PAYMONGO_SECRET_KEY` | PayMongo → Developers → API keys (`sk_test_...`) |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:3000` locally, your domain in production |
+
+### 6. Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000, sign in with Google, then choose **Airbnb your Home** from the menu.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the dev server (Turbopack) |
+| `npm run build` | Production build |
+| `npm start` | Run the production build |
+| `npm run lint` | ESLint |
 
-## Learn More
+## Deploy to Vercel
 
-To learn more about Next.js, take a look at the following resources:
+1. Import the repo on [vercel.com/new](https://vercel.com/new).
+2. Add the 5 environment variables, and set `NEXT_PUBLIC_BASE_URL` to your Vercel URL.
+3. Add `https://<your-vercel-url>/auth/callback` to the Supabase redirect URLs.
+4. Deploy.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) for the project structure, the database,
+the main flows (listing, booking, payment) and the security model.
 
-## Deploy on Vercel
+## Testing payments
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+With a `sk_test_` key PayMongo shows a test GCash page. Click **Authorize Test Payment** to
+succeed or **Fail Test Payment** to cancel. No real money is charged.

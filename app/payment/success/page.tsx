@@ -1,9 +1,8 @@
 // app/payment/success/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
 
 export default function PaymentSuccess() {
@@ -11,23 +10,28 @@ export default function PaymentSuccess() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const reservationId = searchParams.get('reservation_id');
+  const verified = useRef(false);
 
   useEffect(() => {
+    // run once (React dev mode runs effects twice)
+    if (verified.current) return;
+    verified.current = true;
+
     const updateReservation = async () => {
       if (!reservationId) {
         setStatus('error');
         return;
       }
 
-      const supabase = await createClient();
-      
-      const { error } = await supabase
-        .from('reservation')
-        .update({ isPaid: true })
-        .eq('id', reservationId);
+      // Payment is verified on the server, the browser can't mark it paid
+      const res = await fetch('/api/payments/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservationId }),
+      });
 
-      if (error) {
-        console.error('Error updating reservation:', error);
+      if (!res.ok) {
+        console.error('Error verifying payment:', await res.text());
         setStatus('error');
       } else {
         setStatus('success');

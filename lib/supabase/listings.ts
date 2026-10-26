@@ -2,12 +2,10 @@
 
 "use server";
 
-import { serverCaller, trpc } from "@/trpc/server";
+import { serverCaller } from "@/trpc/server";
 import { getClientUserProfile } from "./auth";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { AsyncCallbackSet } from "next/dist/server/lib/async-callback-set";
-import { start } from "repl";
 import { revalidatePath } from "next/cache";
 
 
@@ -204,6 +202,15 @@ export async function getListingData(listingId : string){
   return {listing, user}
 
 }
+// Listing for the edit pages: only returns it if the logged-in user owns it
+export async function getOwnListing(listingId: string){
+  const user = await getClientUserProfile();
+  const { listing } = await getListingData(listingId);
+
+  if (!user || !listing || listing.userId !== user.id) return null;
+  return listing;
+}
+
 export async function getReservationListings(userId: string){
   const reservations = await serverCaller.listings.getReservationListings({userId});
   return reservations;

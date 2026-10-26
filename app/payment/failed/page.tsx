@@ -16,7 +16,7 @@ export default function PaymentFailed() {
       if (!reservationId) return;
 
       const supabase = await createClient();
-      await supabase.from('reservations').delete().eq('id', reservationId);
+      await supabase.from('reservation').delete().eq('id', reservationId);
     };
 
     deleteReservation();

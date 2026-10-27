@@ -35,7 +35,7 @@ Supabase  ── Postgres (RLS) ── Auth (Google) ── Storage ("images" bu
 - **Client Components** use `trpc.*.useQuery / useMutation` through `/api/trpc`.
 - **Forms** post to **Server Actions** in `lib/supabase/listings.ts`, which call the tRPC router.
 - Every Supabase query runs as the logged-in user, so **Row Level Security** decides what each user can read or change.
-- `middleware.ts` refreshes the Supabase session cookie on every request.
+- `proxy.ts` (Next 16's replacement for `middleware.ts`) refreshes the Supabase session cookie on every request.
 
 ## 2. Project structure
 
@@ -71,8 +71,9 @@ trpc/
 utils/supabase/
   server.ts                   Server client (cookies)
   client.ts                   Browser client
-  middleware.ts               Session refresh
+  middleware.ts               Session refresh helper (used by proxy.ts)
   admin.ts                    Service-role client (server only, payments)
+proxy.ts                      Runs on every request, refreshes the session
 supabase/
   schema.sql                  Full database setup, paste into the SQL Editor
 ```

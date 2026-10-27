@@ -1,6 +1,6 @@
 # Airbnb Clone (Philippines edition)
 
-A simple Airbnb clone built with **Next.js 15**, **Supabase** and **tRPC**.
+A simple Airbnb clone built with **Next.js 16**, **Supabase** and **tRPC**.
 Hosts can list their home, guests can search by province and dates, save favorites,
 and book a stay with **GCash** through **PayMongo**.
 
@@ -21,7 +21,7 @@ and book a stay with **GCash** through **PayMongo**.
 
 | Part | Tool |
 |---|---|
-| Framework | Next.js 15 (App Router, Server Actions) |
+| Framework | Next.js 16 (App Router, Server Actions) |
 | API | tRPC 11 + TanStack Query |
 | Database, auth, storage | Supabase (Postgres + RLS) |
 | Payments | PayMongo (GCash sources) |

@@ -21,8 +21,18 @@ export function activeReservationFilter() {
   return `isPaid.eq.true,created_at.gt.${cutoff}`
 }
 
-// Public site URL (used for OAuth and payment redirects)
-export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+// Public site URL (used for OAuth and payment redirects).
+// On Vercel it falls back to the production domain if NEXT_PUBLIC_BASE_URL is missing.
+export const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000")
+
+// Safe storage file name: keeps letters, numbers, dot, dash and underscore
+export function safeFileName(name: string) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-100)
+}
 
 // Public URL of a photo stored in the Supabase "images" bucket
 export function getImageUrl(path?: string | null) {

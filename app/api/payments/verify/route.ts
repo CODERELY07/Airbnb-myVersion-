@@ -18,7 +18,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { reservationId } = await req.json();
+    const { reservationId } = await req.json().catch(() => ({}));
+
+    if (typeof reservationId !== 'string' || !reservationId) {
+      return NextResponse.json({ error: 'Missing reservation' }, { status: 400 });
+    }
     const admin = createAdminClient();
 
     const { data: reservation } = await admin
@@ -75,14 +79,15 @@ export async function POST(req: NextRequest) {
       .eq('id', reservation.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Failed to mark reservation paid:', error);
+      return NextResponse.json({ error: 'Could not confirm payment' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Payment verify error:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { error: 'Something went wrong. Please try again.' },
       { status: 500 }
     );
   }

@@ -138,6 +138,10 @@ A listing appears publicly only when all three `added*` flags are `true`.
 | isPaid | bool | only the server can set it to true |
 | paymentSourceId | text | PayMongo source id |
 
+### reservation_dates (view)
+Public, read-only: `listingId`, `startDate`, `endDate`, `isPaid`, `created_at`. Used by the calendar,
+search and the double-booking check, so the `reservation` table itself can stay private.
+
 ### Storage
 `images` is a public bucket with a 5 MB limit that accepts images only. Photo URL:
 `{SUPABASE_URL}/storage/v1/object/public/images/{photo}` (see `getImageUrl()`).
@@ -226,15 +230,20 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 
 ## 7. Security model
 
-- **RLS on every table.** Reads are public for listings, host profiles and reservation dates.
+- **RLS on every table.** Listings and host profiles are public. Reservations are private to the guest;
+  only booked dates are public, through the `reservation_dates` view (no guest id, no price).
   Only the owner can insert, update or delete their own rows. Favorites are private.
 - **Reservations can't be marked paid from the browser.** There is no update policy, and inserts
   must have `isPaid = false`. Only `/api/payments/verify` (service role) sets `isPaid`, after PayMongo confirms.
 - **The price is calculated on the server** from `listings.price` and the dates. The client only sends ids and dates.
 - **Double booking is blocked** on the server by an overlap check before inserting.
 - **The service role key** is only used in `utils/supabase/admin.ts`, which is marked `server-only`.
-- **Uploads** are limited to images up to 5 MB by the storage bucket.
+- **Uploads** are limited to images up to 5 MB by the storage bucket, and file names are sanitized (`safeFileName()`).
 - **Open redirect protection:** `/auth/callback` only accepts relative `next` paths.
+- **Input validation:** `/api/payments` validates the body with zod (uuid, real dates, no past check-in, max 90 nights).
+- **No internal errors leak:** API routes log details on the server and return generic messages.
+- **Security headers** (`next.config.ts`): `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,
+  `Permissions-Policy`, `Strict-Transport-Security`; the `X-Powered-By` header is off.
 
 ## 8. Environment variables
 

@@ -26,7 +26,7 @@ and book a stay with **GCash** through **PayMongo**.
 | Database, auth, storage | Supabase (Postgres + RLS) |
 | Payments | PayMongo (GCash sources) |
 | UI | Tailwind CSS 4, shadcn/ui (Radix), lucide-react |
-| Maps and locations | Leaflet, `@jobuntux/psgc` |
+| Locations | `@jobuntux/psgc` (Philippine regions to barangays) |
 
 ## Quick start
 

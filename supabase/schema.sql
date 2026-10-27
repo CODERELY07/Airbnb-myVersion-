@@ -186,13 +186,25 @@ drop policy if exists "favorites_delete_own" on public.favorites;
 create policy "favorites_delete_own" on public.favorites
   for delete to authenticated using (auth.uid() = "userId");
 
--- reservation: dates must be readable by everyone (calendar + search
--- availability check). Guests can create (always unpaid) and cancel their own.
+-- reservation: private to the guest. Booked dates are public through the
+-- reservation_dates view below. Guests can create (always unpaid) and cancel their own.
 -- There is NO update policy: only the server (service role key) can set
 -- "isPaid" after PayMongo confirms the payment.
+-- Guests only see their own reservations (who booked and what they paid stays private)
 drop policy if exists "reservation_select_all" on public.reservation;
-create policy "reservation_select_all" on public.reservation
-  for select using (true);
+drop policy if exists "reservation_select_own" on public.reservation;
+create policy "reservation_select_own" on public.reservation
+  for select to authenticated using (auth.uid() = "userId");
+
+-- Public, read-only list of booked dates for the calendar, search and
+-- overlap check. No guest id or price. The view runs as its owner, so it can
+-- read every row even though the table itself is private.
+create or replace view public.reservation_dates as
+  select "listingId", "startDate", "endDate", "isPaid", created_at
+  from public.reservation;
+
+revoke all on public.reservation_dates from anon, authenticated;
+grant select on public.reservation_dates to anon, authenticated;
 
 drop policy if exists "reservation_insert_own" on public.reservation;
 create policy "reservation_insert_own" on public.reservation

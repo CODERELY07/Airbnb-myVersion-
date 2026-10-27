@@ -7,6 +7,7 @@ import { getClientUserProfile } from "./auth";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { safeFileName } from "@/lib/utils";
 
 
 export async function createCategoryAction(prevState: any, formData: FormData) {
@@ -73,7 +74,7 @@ export async function createDescription(formData: FormData) {
     const supabase = await createClient();
 
     // Upload image
-    const filePath = `${listingId}/${imageFile.name}-${Date.now()}`;
+    const filePath = `${listingId}/${Date.now()}-${safeFileName(imageFile.name)}`;
 
     const { data: imageData, error: uploadError } = await supabase.storage
       .from("images")
@@ -231,7 +232,7 @@ export async function updateListingDescription(formData: FormData) {
     }
 
     // Upload new image
-    const filePath = `${imageFile.name}-${Date.now()}`;
+    const filePath = `${listingId}/${Date.now()}-${safeFileName(imageFile.name)}`;
     const { data: imageData, error: uploadError } = await supabase.storage
       .from("images")
       .upload(filePath, imageFile, {

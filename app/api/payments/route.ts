@@ -2,6 +2,16 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { activeReservationFilter, BASE_URL, getNights, isPaymentEnabled, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const MAX_NIGHTS = 90;
+const isDate = (v: string) => !Number.isNaN(Date.parse(v));
+
+const bodySchema = z.object({
+  listingId: z.string().uuid(),
+  checkIn: z.string().refine(isDate),
+  checkOut: z.string().refine(isDate),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,18 +35,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Only trust ids and dates from the client. Price is calculated here.
-    const { listingId, checkIn, checkOut } = await req.json();
+    const parsed = bodySchema.safeParse(await req.json().catch(() => null));
 
-    // Validate input
-    if (!listingId || !checkIn || !checkOut) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing or invalid fields' },
         { status: 400 }
       );
     }
 
+    const { listingId, checkIn, checkOut } = parsed.data;
+
+    // No past check-ins (1 day of slack for time zones), no endless stays
     const nights = getNights(new Date(checkIn), new Date(checkOut));
-    if (!nights || nights <= 0) {
+    const startsInPast = Date.parse(checkIn) < Date.now() - 24 * 60 * 60 * 1000;
+
+    if (nights <= 0 || nights > MAX_NIGHTS || startsInPast) {
       return NextResponse.json(
         { error: 'Invalid dates' },
         { status: 400 }
@@ -97,9 +111,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if the dates overlap someone else's reservation
+    // Check if the dates overlap someone else's reservation (public dates view)
     const { data: overlapping } = await supabase
-      .from("reservation")
+      .from("reservation_dates")
       .select("id")
       .eq("listingId", listingId)
       .lt("startDate", checkOut)
@@ -177,9 +191,10 @@ export async function POST(req: NextRequest) {
 
       await supabase.from('reservation').delete().eq('id', reservation.id);
 
+      console.error('PayMongo error:', paymongoData.errors);
       return NextResponse.json(
-        { error: paymongoData.errors },
-        { status: 400 }
+        { error: 'Could not start the payment. Please try again.' },
+        { status: 502 }
       );
     }
 
@@ -191,9 +206,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(paymongoData, { status: 200 });
   } catch (err) {
+    // Log details on the server, send a generic message to the client
     console.error('Payment API error:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { error: 'Something went wrong. Please try again.' },
       { status: 500 }
     );
   }

@@ -314,8 +314,9 @@ import { activeReservationFilter } from '@/lib/utils';
   .query(async ({input}) => {
     const supabase = await createClient();
     const {listingId} = input;
+    // public view: dates only, no guest info
     const { data, error } = await supabase
-      .from('reservation')
+      .from('reservation_dates')
       .select('startDate, endDate')
       .eq('listingId', listingId)
       .or(activeReservationFilter());
@@ -386,7 +387,7 @@ import { activeReservationFilter } from '@/lib/utils';
 
     // Only load reservations that overlap the requested dates
     const { data: bookedReservations, error: reservationsError } = await supabase
-      .from('reservation')
+      .from('reservation_dates')
       .select('listingId')
       .lte('startDate', input.checkOut)
       .gte('endDate', input.checkIn)

@@ -203,8 +203,9 @@ import { activeReservationFilter } from '@/lib/utils';
         .eq('addedCategory', true)
         .eq('addedDescription', true)
         .eq('addedLocation', true)
-        
-        
+        // stable order (oldest first), so editing a listing doesn't move it
+        .order('created_at', { ascending: true })
+
       if (searchParams) {
         query = query.eq('categoryName', searchParams);
       }
@@ -361,7 +362,8 @@ import { activeReservationFilter } from '@/lib/utils';
       .select('*, favorites(*)')
       .eq('addedCategory', true)
       .eq('addedDescription', true)
-      .eq('addedLocation', true);
+      .eq('addedLocation', true)
+      .order('created_at', { ascending: true });
 
     if (input.destination) {
       query = query.ilike('provinceCode', `%${input.destination}%`);

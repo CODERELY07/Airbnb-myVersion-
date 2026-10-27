@@ -174,7 +174,8 @@ removes listings that have a reservation overlapping the dates (the overlap chec
 ### Book and pay (GCash)
 ```
 ReservationCard ──POST /api/payments {listingId, checkIn, checkOut}
-   server: checks login → calculates nights and price from the DB → checks duplicate and overlap
+   server: checks login → blocks booking your own listing → calculates nights and price from the DB
+           → deletes your own earlier unpaid attempts → checks duplicate and overlap
            → inserts reservation (isPaid=false) → creates PayMongo GCash source
            → saves paymentSourceId → returns checkout_url
 Browser ──► PayMongo GCash page
@@ -183,6 +184,11 @@ Browser ──► PayMongo GCash page
                         → payment status must be "paid" → sets isPaid = true
    failed  ─► /payment/failed  → deletes the unpaid reservation
 ```
+
+**Abandoned payments:** an unpaid reservation only holds its dates for 30 minutes
+(`PENDING_PAYMENT_MINUTES` in `lib/utils.ts`). After that, the calendar, search and the overlap check
+ignore it (`activeReservationFilter()`), so a guest who closes the GCash page doesn't block the listing.
+The reservations page only shows paid bookings.
 
 **Fallback:** `isPaymentEnabled()` in `lib/utils.ts` is true only when both
 `PAYMONGO_SECRET_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are set. If not, the listing page disables
@@ -203,9 +209,8 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 | `listings.fetchFavListings` | query | A user's favorites with their listing |
 | `listings.getListingData` | query | One listing with its host |
 | `listings.addToFavorite` / `removeFromFavorite` | mutation | Favorites |
-| `listings.createReservation` | mutation | Reservation without payment (not used by the UI) |
-| `listings.fetchReservation` | query | Booked date ranges for the calendar |
-| `listings.getReservationListings` | query | A user's reservations with their listing |
+| `listings.fetchReservation` | query | Booked date ranges for the calendar (paid, or pending under 30 min) |
+| `listings.getReservationListings` | query | A user's paid reservations with their listing |
 | `listings.searchListings` | query | Search with availability |
 | `listings.updateListing` / `updateLocation` / `updateCategory` | mutation | Edit |
 | `listings.deleteListing` | mutation | Delete a listing and its photo |

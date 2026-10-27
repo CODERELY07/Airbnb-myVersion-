@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
-import { BASE_URL, getNights, isPaymentEnabled, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
+import { activeReservationFilter, BASE_URL, getNights, isPaymentEnabled, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const { data: listing } = await supabase
       .from('listings')
-      .select('price')
+      .select('price, "userId"')
       .eq('id', listingId)
       .single();
 
@@ -56,8 +56,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (listing.userId === user.id) {
+      return NextResponse.json(
+        { error: "You can't book your own listing." },
+        { status: 400 }
+      );
+    }
+
     const totalPrice = nights * Number(listing.price);
     const amount = Math.round(totalPrice * 100); // PayMongo uses centavos
+
+    // The guest is starting over: drop their own unpaid attempts for this listing
+    await supabase
+      .from("reservation")
+      .delete()
+      .eq("listingId", listingId)
+      .eq("userId", user.id)
+      .eq("isPaid", false);
 
     // Check if user already has a reservation for this listing
     const { data: existingReservations, error: fetchError } = await supabase
@@ -89,6 +104,7 @@ export async function POST(req: NextRequest) {
       .eq("listingId", listingId)
       .lt("startDate", checkOut)
       .gt("endDate", checkIn)
+      .or(activeReservationFilter())
       .limit(1);
 
     if (overlapping && overlapping.length > 0) {

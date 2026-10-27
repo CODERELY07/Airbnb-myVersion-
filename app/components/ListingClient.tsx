@@ -130,6 +130,7 @@ export default function ListingClient({ listingData, userData, client, paymentsE
             listingPrice={listingData?.price}
             listingId={listingData.id}
             paymentsEnabled={paymentsEnabled}
+            isOwner={!!client?.id && client.id === listingData.userId}
           />
         </div>
       </div>

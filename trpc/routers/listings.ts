@@ -6,6 +6,7 @@
   import { createClient } from '@/utils/supabase/server';
   import { revalidatePath } from 'next/cache';
 import { getProvinceName } from '@/app/lib/locaitonHelpers';
+import { activeReservationFilter } from '@/lib/utils';
 
 
   export const homeRouter = createTRPCRouter({
@@ -304,41 +305,6 @@ import { getProvinceName } from '@/app/lib/locaitonHelpers';
         return data;
     }),
 
-    createReservation: baseProcedure.input(
-      z.object({
-        userId: z.string(),
-        listingId: z.string(),
-        startDate: z.string(),
-        endDate : z.string()
-      })
-    ).mutation(async ({ input }) => {
-        const { userId, listingId, startDate, endDate } = input;
-        const supabase = await createClient();
-
-        const { data: existingReservations, error: fetchError } = await supabase
-          .from("reservation")
-          .select("*")
-          .eq("listingId", listingId).eq('userId', userId)
-
-        if (fetchError) {
-          console.error("Error checking existing reservations:", fetchError);
-          throw new Error("Unable to verify reservation availability");
-        }
-
-        if (existingReservations && existingReservations.length > 0) {
-          throw new Error("You already book this listings check your reservationa nd try again...");
-        }
-
-        const { data, error } = await supabase.from("reservation").insert([
-          { userId, listingId, startDate, endDate },
-        ]);
-
-        if (error) {
-          console.error("Error inserting reservation:", error);
-          throw new Error("Unable to create reservation.");
-        }
-    }),
-
   // for calendar reservation
   fetchReservation: baseProcedure.input(
     z.object({
@@ -348,7 +314,11 @@ import { getProvinceName } from '@/app/lib/locaitonHelpers';
   .query(async ({input}) => {
     const supabase = await createClient();
     const {listingId} = input;
-    const { data, error } = await supabase.from('reservation').select('startDate, endDate').eq('listingId', listingId);
+    const { data, error } = await supabase
+      .from('reservation')
+      .select('startDate, endDate')
+      .eq('listingId', listingId)
+      .or(activeReservationFilter());
 
     if (error) {
       console.error('Error fetching reservations:', error);
@@ -365,7 +335,7 @@ import { getProvinceName } from '@/app/lib/locaitonHelpers';
     ).query(async ({input}) => {
       const supabase = await createClient();
       const {userId} = input; 
-      const {data, error} = await supabase.from('reservation').select('*, users(*), listings(*)').eq('userId', userId);
+      const {data, error} = await supabase.from('reservation').select('*, users(*), listings(*)').eq('userId', userId).eq('isPaid', true);
 
       return data;
   }),
@@ -419,7 +389,8 @@ import { getProvinceName } from '@/app/lib/locaitonHelpers';
       .from('reservation')
       .select('listingId')
       .lte('startDate', input.checkOut)
-      .gte('endDate', input.checkIn);
+      .gte('endDate', input.checkIn)
+      .or(activeReservationFilter());
 
     if (reservationsError) throw new Error(reservationsError.message);
 

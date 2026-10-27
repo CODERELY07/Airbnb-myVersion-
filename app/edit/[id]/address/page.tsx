@@ -28,13 +28,18 @@ import {
 import { updateListingLocation } from "@/lib/supabase/listings";
 import { useState, useEffect } from "react";
 import React from 'react';
+import { trpc } from "@/trpc/client";
 
 export default function EditAddressRoute({ 
   params,
 }: { 
   params: Promise<{id: string}>;
 }) {
+  const { id } = React.use(params);
   const regions = listRegions();
+
+  // Load the current address so the form starts filled in
+  const { data } = trpc.listings.getListingData.useQuery({ listingId: id });
 
   const [regionCode, setRegionCode] = useState('');
   const [provinceCode, setProvinceCode] = useState('');
@@ -52,7 +57,16 @@ export default function EditAddressRoute({
     : munCityCode;
 
   const barangays = effectiveMunCityCode ? listBarangays(effectiveMunCityCode) : [];
-  const { id } = React.use(params);
+
+  useEffect(() => {
+    const listing = data?.listing;
+    if (!listing) return;
+    setRegionCode(listing.regionCode ?? '');
+    setProvinceCode(listing.provinceCode ?? '');
+    setMunCityCode(listing.munCityCode ?? '');
+    setBarangayCode(listing.barangayCode ?? '');
+  }, [data]);
+
   return (
     <>
       <div className="w-3/5 mx-auto mb-5 mt-4">
@@ -73,6 +87,8 @@ export default function EditAddressRoute({
               required 
               value={regionCode} 
               onValueChange={(value) => {
+                // Radix re-fires this (sometimes with '') when the value is set from code; don't reset then
+                if (!value || value === regionCode) return;
                 setRegionCode(value);
                 setProvinceCode('');
                 setMunCityCode('');
@@ -99,6 +115,7 @@ export default function EditAddressRoute({
               required 
               value={provinceCode} 
               onValueChange={(value) => {
+                if (!value || value === provinceCode) return;
                 setProvinceCode(value);
                 setMunCityCode('');
                 setBarangayCode('');
@@ -125,6 +142,7 @@ export default function EditAddressRoute({
               required 
               value={munCityCode} 
               onValueChange={(value) => {
+                if (!value || value === munCityCode) return;
                 setMunCityCode(value);
                 setBarangayCode('');
               }}
@@ -150,6 +168,7 @@ export default function EditAddressRoute({
               required 
               value={barangayCode} 
               onValueChange={(value) => {
+                if (!value) return;
                 setBarangayCode(value)
               }}
               disabled={!provinceCode || (!isHUC && !munCityCode)}

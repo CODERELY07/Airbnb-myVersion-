@@ -173,24 +173,6 @@ export async function deleteFromFavorite(formData: FormData){
 
 }
 
-export async function createReservation(formData: FormData) {
-  const userId = formData.get("userId") as string;
-  const listingId = formData.get("listingId") as string;
-  const startDate = formData.get("startDate") as string;
-  const endDate = formData.get("endDate") as string;
-
-  // console.log("user data", userId, listingId, startDate, endDate)
-    if (!listingId || !userId || !startDate || !endDate) {
-    throw new Error("Missing required fields");
-  }
-
-  await serverCaller.listings.createReservation({
-    userId, listingId, startDate, endDate
-  })
-
-  return redirect("/");
-}
-
 export async function getListingData(listingId : string){
   const response = await serverCaller.listings.getListingData({listingId});
   // console.log(response)

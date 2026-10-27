@@ -11,6 +11,7 @@ export default function ReservationCard({
   listingPrice,
   listingId,
   paymentsEnabled = true,
+  isOwner = false,
 }: {
   userId: string;
   checkIn?: Date;
@@ -18,6 +19,7 @@ export default function ReservationCard({
   listingPrice: number;
   listingId: string;
   paymentsEnabled?: boolean;
+  isOwner?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +126,7 @@ export default function ReservationCard({
           </div>
         )}
 
-        {!paymentsEnabled ? (
+        {isOwner || !paymentsEnabled ? (
           <Button className="w-full text-sm sm:text-base py-5 sm:py-6" disabled>
             Reserve
           </Button>
@@ -165,7 +167,7 @@ export default function ReservationCard({
         )}
 
         <p className="text-center text-gray-600 text-xs sm:text-sm mt-3">
-          {!paymentsEnabled ? PAYMENT_UNAVAILABLE_MESSAGE : userId ? "You'll be redirected to GCash to complete your Reservation" : "Please login to continue"}
+          {isOwner ? 'This is your listing.' : !paymentsEnabled ? PAYMENT_UNAVAILABLE_MESSAGE : userId ? "You'll be redirected to GCash to complete your Reservation" : "Please login to continue"}
         </p>
       </div>
     </div>

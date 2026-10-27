@@ -56,8 +56,8 @@ async function ShowSearchResults({
           userId={userId}
           title={listing.title}
           pathName="/search"
-          favoriteId={''}       
-          isInFavoriteList={false}
+          favoriteId={listing.favorites[0]?.id}
+          isInFavoriteList={!!listing.favorites[0]?.id}
           listingId={listing.id}
         />
       ))}

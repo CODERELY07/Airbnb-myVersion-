@@ -34,6 +34,12 @@ const NavUser = () => {
     fetchUser();
   }, []);
 
+  const handleSignOut = async () => {
+    await signOut();
+    // full reload so the menu doesn't keep the old user
+    window.location.href = '/';
+  };
+
   const createHomewithId = () => {
     if (!user?.id) {
       // console.error('User not logged in');
@@ -64,7 +70,7 @@ const NavUser = () => {
               <DropdownMenuItem disabled className="text-xs sm:text-sm">{user.name}</DropdownMenuItem>
               <DropdownMenuItem disabled className="text-xs sm:text-sm">{user.email}</DropdownMenuItem>
               <DropdownMenuItem>
-                <form action={signOut} className="w-full">
+                <form action={handleSignOut} className="w-full">
                   <button className="btn text-xs sm:text-sm w-full text-left" type="submit">Sign Out</button>
                 </form>
               </DropdownMenuItem>

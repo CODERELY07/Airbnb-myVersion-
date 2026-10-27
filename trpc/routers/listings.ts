@@ -387,7 +387,7 @@ import { getProvinceName } from '@/app/lib/locaitonHelpers';
 
     let query = supabase
       .from('listings')
-      .select('*')
+      .select('*, favorites(*)')
       .eq('addedCategory', true)
       .eq('addedDescription', true)
       .eq('addedLocation', true);

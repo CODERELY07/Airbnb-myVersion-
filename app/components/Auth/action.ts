@@ -34,6 +34,8 @@ const signInAsDemo = async (role: string) => {
   const password = process.env.DEMO_ACCOUNT_PASSWORD;
 
   if (!account || !password) {
+    // Shows in the server / Vercel logs so the cause is easy to find
+    console.error(!account ? `Unknown demo role: ${role}` : 'DEMO_ACCOUNT_PASSWORD is not set');
     return { error: 'Demo accounts are not available right now.' };
   }
 
@@ -44,7 +46,7 @@ const signInAsDemo = async (role: string) => {
   });
 
   if (error) {
-    console.error('Demo sign-in error:', error);
+    console.error(`Demo sign-in failed for ${account.email}:`, error.message);
     return { error: 'Demo accounts are not available right now.' };
   }
 

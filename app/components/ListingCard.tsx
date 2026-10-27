@@ -84,7 +84,7 @@ export function ListingCard({description, imagePath, location, price, userId, is
                 
                 <p className="-mt-1 text-muted-foreground">
                     <span className="font-medium text-xs">₱{price.toLocaleString()}</span>
-                    <span className="font-normal text-xs "> for 2 nights</span>
+                    <span className="font-normal text-xs "> per night</span>
                 </p>
             </Link>
         </div>

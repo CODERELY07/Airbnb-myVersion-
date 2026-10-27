@@ -10,6 +10,7 @@ and book a stay with **GCash** through **PayMongo**.
 
 - Google sign-in (Supabase Auth)
 - One-click **demo accounts** (Demo Host and Demo Guest) for portfolio visitors
+- 13 ready-made **demo listings** with photos, one per category, across the Philippines
 - Create a listing in 3 steps: category → description and photo → address (Philippine regions, provinces, cities and barangays)
 - Edit and delete your own listings
 - Browse by category, search by province, dates, guests, bedrooms and bathrooms
@@ -93,6 +94,15 @@ Visitors can sign in with one click as **Demo Host** or **Demo Guest**, with no 
 The accounts are listed in [`lib/demoAccounts.json`](lib/demoAccounts.json). The password
 stays on the server; the login buttons call a server action. Run the command again any time to reset the password.
 
+Then add the demo listings (owned by Demo Host, photos from [Unsplash](https://unsplash.com)):
+
+```bash
+npm run demo:listings
+```
+
+The listings are defined in [`scripts/demo-listings.json`](scripts/demo-listings.json). Running the command
+again replaces only the demo listings (photos under `demo/`); anything else created with Demo Host stays.
+
 ### 7. Run
 
 ```bash
@@ -110,6 +120,7 @@ Open http://localhost:3000, sign in with Google or a demo account, then choose *
 | `npm start` | Run the production build |
 | `npm run lint` | ESLint |
 | `npm run demo:accounts` | Create or reset the demo accounts |
+| `npm run demo:listings` | Create or reset the demo listings and photos |
 
 ## Deploy to Vercel
 

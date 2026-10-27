@@ -64,6 +64,8 @@ lib/
   demoAccounts.json           Demo account emails and labels (no passwords)
 scripts/
   create-demo-accounts.mjs    Creates or resets the demo users
+  create-demo-listings.mjs    Creates or resets the demo listings (photos from Unsplash)
+  demo-listings.json          Demo listing data: title, price, category, PSGC codes, photo id
 trpc/
   init.ts  server.tsx  client.tsx  query-client.ts
   routers/_app.ts             Root router

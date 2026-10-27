@@ -1,0 +1,119 @@
+[
+  {
+    "slug": "el-nido-beach-hut",
+    "title": "Overwater Nipa Hut in El Nido",
+    "description": "A breezy bamboo-and-nipa cottage right on the sand. Wake up to turquoise water, island-hop from the front steps and end the day with sunset over Bacuit Bay.",
+    "categoryName": "beachfront",
+    "price": 4800, "guests": 4, "bedrooms": 2, "bathrooms": 1,
+    "unsplash": "1499793983690-e29da59ef1c2",
+    "regionCode": "17", "provinceCode": "053", "munCityCode": "05312", "barangayCode": "05312018"
+  },
+  {
+    "slug": "coron-jungle-pool-villa",
+    "title": "Jungle Pool Villa near Coron",
+    "description": "Private villa surrounded by palms and limestone cliffs, with a lagoon-style pool. Close to Kayangan Lake and the best wreck dives in Palawan.",
+    "categoryName": "pool",
+    "price": 9500, "guests": 6, "bedrooms": 3, "bathrooms": 2,
+    "unsplash": "1520250497591-112f2f40a3f4",
+    "regionCode": "17", "provinceCode": "053", "munCityCode": "05309", "barangayCode": "05309001"
+  },
+  {
+    "slug": "boracay-cliffside-suite",
+    "title": "Cliffside Infinity Suite, Boracay",
+    "description": "Perched above the sea with an infinity pool that melts into the horizon. Minutes from White Beach but far enough for quiet nights.",
+    "categoryName": "amazingView",
+    "price": 12500, "guests": 2, "bedrooms": 1, "bathrooms": 1,
+    "unsplash": "1540541338287-41700207dee6",
+    "regionCode": "06", "provinceCode": "004", "munCityCode": "00412", "barangayCode": "00412001"
+  },
+  {
+    "slug": "vigan-heritage-house",
+    "title": "Heritage House with Pool in Vigan",
+    "description": "A restored colonial-style home with wide verandas and capiz windows, a short calesa ride from Calle Crisologo.",
+    "categoryName": "historic",
+    "price": 6200, "guests": 8, "bedrooms": 4, "bathrooms": 3,
+    "unsplash": "1564013799919-ab600027ffc6",
+    "regionCode": "01", "provinceCode": "029", "munCityCode": "02934", "barangayCode": "02934001"
+  },
+  {
+    "slug": "panglao-teak-lodge",
+    "title": "Teak Lodge & Pool Deck, Panglao",
+    "description": "Hardwood lodge with a big pool deck and loungers, a few steps from Alona Beach. Perfect base for Chocolate Hills and tarsier day trips.",
+    "categoryName": "beach",
+    "price": 7400, "guests": 6, "bedrooms": 3, "bathrooms": 2,
+    "unsplash": "1566073771259-6a8506099945",
+    "regionCode": "07", "provinceCode": "012", "munCityCode": "01233", "barangayCode": "01233001"
+  },
+  {
+    "slug": "sagada-a-frame-cabin",
+    "title": "Mountain A-Frame Cabin in Sagada",
+    "description": "Cozy A-frame among the pines, with a fireplace for cold Cordillera nights and the sea of clouds a short hike away.",
+    "categoryName": "countryside",
+    "price": 3800, "guests": 4, "bedrooms": 2, "bathrooms": 1,
+    "unsplash": "1568605114967-8130f3a36994",
+    "regionCode": "14", "provinceCode": "044", "munCityCode": "04409", "barangayCode": "04409001"
+  },
+  {
+    "slug": "atok-tiny-red-cabin",
+    "title": "Tiny Red Cabin in Atok",
+    "description": "A one-room tiny house on a flower-covered hill. Simple, quiet and made for slow mornings with Benguet coffee.",
+    "categoryName": "tiny",
+    "price": 2200, "guests": 2, "bedrooms": 1, "bathrooms": 1,
+    "unsplash": "1518780664697-55e3ad937233",
+    "regionCode": "14", "provinceCode": "011", "munCityCode": "01101", "barangayCode": "01101001"
+  },
+  {
+    "slug": "nasugbu-modern-luxe-villa",
+    "title": "Modern Luxe Villa in Nasugbu",
+    "description": "Glass-and-concrete villa with a lap pool, chef's kitchen and floor-to-ceiling windows. Two hours from Manila, a world away.",
+    "categoryName": "luxe",
+    "price": 18000, "guests": 10, "bedrooms": 5, "bathrooms": 5,
+    "unsplash": "1613490493576-7fde63acd811",
+    "regionCode": "04", "provinceCode": "010", "munCityCode": "01019", "barangayCode": "01019001"
+  },
+  {
+    "slug": "tagaytay-design-house",
+    "title": "Architect's Design House, Tagaytay",
+    "description": "Minimalist white house with a plunge pool and cool Tagaytay breeze. Great for a weekend of bulalo and Taal views.",
+    "categoryName": "design",
+    "price": 8600, "guests": 6, "bedrooms": 3, "bathrooms": 2,
+    "unsplash": "1512917774080-9991f1c4c750",
+    "regionCode": "04", "provinceCode": "021", "munCityCode": "02119", "barangayCode": "02119001"
+  },
+  {
+    "slug": "siargao-surf-deck",
+    "title": "Surf Deck Bungalow, Siargao",
+    "description": "Sun deck with loungers facing the sea, board rack included. Ride to Cloud 9 in ten minutes.",
+    "categoryName": "surfing",
+    "price": 3500, "guests": 3, "bedrooms": 1, "bathrooms": 1,
+    "unsplash": "1582719508461-905c673771fd",
+    "regionCode": "16", "provinceCode": "067", "munCityCode": "06710", "barangayCode": "06710001"
+  },
+  {
+    "slug": "tuba-pine-forest-cottage",
+    "title": "Pine Forest Cottage near Baguio",
+    "description": "Brick cottage in a quiet pine grove just outside Baguio. Fresh strawberries in the morning, bonfire at night.",
+    "categoryName": "trending",
+    "price": 4100, "guests": 5, "bedrooms": 2, "bathrooms": 1,
+    "unsplash": "1449844908441-8829872d2607",
+    "regionCode": "14", "provinceCode": "011", "munCityCode": "01113", "barangayCode": "01113001"
+  },
+  {
+    "slug": "bukidnon-sunset-earth-home",
+    "title": "Sunset Earth Home in Bukidnon",
+    "description": "Off-grid wooden home in the highlands, built with local materials. Watch the sun drop behind Mt. Kitanglad.",
+    "categoryName": "erathhome",
+    "price": 2900, "guests": 4, "bedrooms": 2, "bathrooms": 1,
+    "unsplash": "1542718610-a1d656d1884c",
+    "regionCode": "10", "provinceCode": "013", "munCityCode": "01305", "barangayCode": "01305001"
+  },
+  {
+    "slug": "moalboal-sky-glass-house",
+    "title": "Sky Glass House, Moalboal",
+    "description": "A jaw-dropping glass villa with a rooftop deck and pool. Swim with the sardine run in the morning, stargaze at night.",
+    "categoryName": "omg",
+    "price": 15500, "guests": 8, "bedrooms": 4, "bathrooms": 4,
+    "unsplash": "1600596542815-ffad4c1539a9",
+    "regionCode": "07", "provinceCode": "022", "munCityCode": "02233", "barangayCode": "02233001"
+  }
+]

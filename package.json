@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "demo:accounts": "node --env-file=.env.local scripts/create-demo-accounts.mjs"
+    "demo:accounts": "node --env-file=.env.local scripts/create-demo-accounts.mjs",
+    "demo:listings": "node --env-file=.env.local scripts/create-demo-listings.mjs"
   },
   "dependencies": {
     "@jobuntux/psgc": "^0.2.1",

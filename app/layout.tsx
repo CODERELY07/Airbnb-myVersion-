@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Geist } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import { TRPCProvider } from "@/trpc/client";
@@ -7,26 +7,23 @@ import { TRPCProvider } from "@/trpc/client";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: 'swap',
-  preload: false,
-  adjustFontFallback: true, 
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Display face for headings and prices
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  display: 'swap',
-  preload: false,
-  adjustFontFallback: true, 
+  display: "swap",
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
   title: "Airbnb Clone",
   description: "Book unique stays across the Philippines.",
-  
 };
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default function RootLayout({
   children,
@@ -36,14 +33,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${fraunces.variable} min-h-screen font-sans`}
         suppressHydrationWarning
       >
         <TRPCProvider>
-          <Navbar/>
-           {children}
+          <Navbar />
+          <main className="pb-24">{children}</main>
         </TRPCProvider>
-       
       </body>
     </html>
   );

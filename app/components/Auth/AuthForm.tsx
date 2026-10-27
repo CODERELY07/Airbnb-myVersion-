@@ -1,12 +1,37 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { signInAsDemo, signInWithGoogle } from './action';
-import demoAccounts from '@/lib/demoAccounts.json';
+import { useEffect, useState } from "react";
+import { Loader2, X } from "lucide-react";
+import demoAccounts from "@/lib/demoAccounts.json";
+import { signInAsDemo, signInWithGoogle } from "./action";
 
-const AuthForm = ({toggleClick} : {toggleClick : () => void}) => {
+// Google "G" mark, inline so no third-party image is loaded
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-5" aria-hidden>
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+const AuthForm = ({ toggleClick }: { toggleClick: () => void }) => {
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
   const [demoError, setDemoError] = useState<string | null>(null);
+
+  // Close on Escape and stop the page behind from scrolling
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && toggleClick();
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = overflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [toggleClick]);
 
   const handleDemoLogin = async (role: string) => {
     setDemoLoading(role);
@@ -21,97 +46,75 @@ const AuthForm = ({toggleClick} : {toggleClick : () => void}) => {
     }
 
     // full reload so the navbar picks up the new session
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   return (
-    <>
-    <div className='bg-black opacity-25 h-screen w-full absolute left-0 top-0'></div>
-    <div className="fixed inset-0  flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b">
-          <button onClick={toggleClick} className="p-2 hover:bg-gray-100 rounded-full transition">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+    <div className="fixed inset-0 z-50 grid place-items-center p-4">
+      <button aria-label="Close" onClick={toggleClick} className="absolute inset-0 cursor-default bg-black/40 animate-in fade-in" />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-title"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl bg-card shadow-xl ring-1 ring-black/5 animate-in fade-in zoom-in-95"
+      >
+        <div className="flex items-center border-b px-5 py-4">
+          <button
+            onClick={toggleClick}
+            aria-label="Close"
+            className="grid size-8 place-items-center rounded-full transition hover:bg-accent"
+          >
+            <X className="size-4" />
           </button>
-          <h2 className="text-base font-semibold absolute left-1/2 transform -translate-x-1/2">
-            Log in or sign up
-          </h2>
-          <div className="w-8"></div>
+          <p className="flex-1 pr-8 text-center text-sm font-semibold">Log in or sign up</p>
         </div>
 
-        {/* Body */}
         <div className="p-6">
-          <h3 className="text-2xl font-semibold mb-6">Welcome to Airbnb</h3>
+          <h2 id="auth-title" className="font-display text-2xl font-medium">
+            Welcome back
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in to save favorites, book stays and list your home.</p>
 
-          {/* Social Login Buttons */}
-          <div className="space-y-3">
-            <button
-              onClick={signInWithGoogle}
-              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-3 px-4 rounded-lg transition"
-            >
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                alt="Google"
-                className="w-5 h-5"
-              />
-              Continue with Google
-            </button>
+          <button
+            onClick={() => signInWithGoogle()}
+            className="mt-6 flex h-12 w-full items-center justify-center gap-3 rounded-xl border bg-card text-sm font-medium shadow-xs transition hover:bg-accent"
+          >
+            <GoogleMark />
+            Continue with Google
+          </button>
 
-            {/* Demo accounts for the portfolio */}
-            <div className="flex items-center gap-3 pt-2">
-              <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-xs text-gray-500">or try a demo account</span>
-              <div className="h-px flex-1 bg-gray-200" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.role}
-                  onClick={() => handleDemoLogin(account.role)}
-                  disabled={demoLoading !== null}
-                  className="flex flex-col items-center border border-gray-300 hover:bg-gray-50 rounded-lg py-3 px-2 transition disabled:opacity-50"
-                >
-                  <span className="font-medium text-sm text-gray-800">
-                    {demoLoading === account.role ? 'Signing in...' : account.label}
-                  </span>
-                  <span className="text-xs text-gray-500">{account.description}</span>
-                </button>
-              ))}
-            </div>
-
-            {demoError && (
-              <p className="text-xs text-red-600 text-center">{demoError}</p>
-            )}
-
-            {/* <button className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-3 px-4 rounded-lg transition">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-              </svg>
-              Continue with Apple
-            </button>
-
-            <button className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-3 px-4 rounded-lg transition">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M12 8v8m-4-4h8" />
-              </svg>
-              Continue with email
-            </button>
-
-            <button className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-3 px-4 rounded-lg transition">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-              </svg>
-              Continue with Facebook
-            </button> */}
+          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or try a demo account
+            <span className="h-px flex-1 bg-border" />
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {demoAccounts.map((account) => (
+              <button
+                key={account.role}
+                onClick={() => handleDemoLogin(account.role)}
+                disabled={demoLoading !== null}
+                className="flex flex-col items-start rounded-xl border bg-card p-4 text-left transition hover:border-foreground/30 hover:bg-accent disabled:opacity-60"
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  {demoLoading === account.role && <Loader2 className="size-3.5 animate-spin" />}
+                  {account.label}
+                </span>
+                <span className="mt-1 text-xs leading-snug text-muted-foreground">{account.description}</span>
+              </button>
+            ))}
+          </div>
+
+          {demoError && (
+            <p role="alert" className="mt-4 rounded-lg bg-destructive/5 px-3 py-2 text-center text-xs text-destructive">
+              {demoError}
+            </p>
+          )}
         </div>
       </div>
-    </div> 
-    </>
+    </div>
   );
 };
 

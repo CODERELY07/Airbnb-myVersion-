@@ -1,32 +1,31 @@
-import Image from "next/image"
-import Link from "next/link"
+import Image from "next/image";
+import Link from "next/link";
 import DesktopLogo from "./../../public/Airbnb_Logosvg.png";
 import MobileLogo from "./../../public/Airbnb_Logo_mobile.png";
 import NavUser from "./NavUser";
 import SearchBar from "./SearchBar";
 
+// One header for all screens: the user menu is rendered once,
+// and the search bar moves to its own row below lg.
 const Navbar = () => {
   return (
-    <div className="w-full border-b">
-      <div className="flex flex-col lg:flex-row justify-between items-center gap-4 p-3 sm:p-5 lg:px-10 container mx-auto">
-        <div className="w-full lg:w-auto flex justify-between items-center">
-          <Link href="/">
-            <Image src={DesktopLogo} alt="Desktop Logo" className="w-24 sm:w-32 hidden lg:block" width={200} height={200} priority/>
-            <Image src={MobileLogo} alt="Mobile Logo" className="w-10 sm:w-12 block lg:hidden" width={200} height={200} priority/>
-          </Link>
-          <div className="lg:hidden">
-            <NavUser/>
-          </div>
+    <header className="sticky top-0 z-40 border-b bg-card">
+      <div className="page-container grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 py-3 lg:grid-cols-[1fr_minmax(0,760px)_1fr] lg:py-4">
+        <Link href="/" aria-label="Home" className="justify-self-start rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Image src={DesktopLogo} alt="" className="hidden h-auto w-[102px] lg:block" priority />
+          <Image src={MobileLogo} alt="" className="block h-auto w-9 lg:hidden" priority />
+        </Link>
+
+        <div className="col-span-2 row-start-2 lg:col-span-1 lg:col-start-2 lg:row-start-1">
+          <SearchBar />
         </div>
-        <div className="w-full lg:w-auto lg:flex-1 lg:max-w-3xl">
-          <SearchBar/>
-        </div>
-        <div className="hidden lg:block">
-          <NavUser/>
+
+        <div className="col-start-2 row-start-1 justify-self-end lg:col-start-3">
+          <NavUser />
         </div>
       </div>
-    </div>
-  )
-}
+    </header>
+  );
+};
 
-export default Navbar
+export default Navbar;

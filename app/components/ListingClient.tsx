@@ -1,139 +1,180 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { getImageUrl } from '@/lib/utils';
-import { DateRange } from 'react-day-picker';
-import { NoListings } from '@/app/components/NoListings';
-import { Separator } from '@/components/ui/separator';
-import { CategoryShowcase } from '@/app/components/CategoryShowcase';
-import CalendarReservation from '@/components/CalendarReservation';
-import ReservationCard from '@/app/components/ReservationCard';
-import { getBarangayName, getMunicipalityName, getProvinceName, getRegionName } from '../lib/locaitonHelpers';
+import { useState } from "react";
+import Image from "next/image";
+import { Bath, BedDouble, MapPin, Users } from "lucide-react";
+import type { DateRange } from "react-day-picker";
+import { trpc } from "@/trpc/client";
+import { formatPrice, getImageUrl } from "@/lib/utils";
+import { getCategory } from "../lib/categoryItems";
+import { Avatar } from "./Avatar";
+import ReservationCard from "./ReservationCard";
+import { StayCalendar } from "./StayCalendar";
 
-export default function ListingClient({ listingData, userData, client, paymentsEnabled }: any) {
-  // hooks must run before any early return
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: undefined,
-    to: undefined,
+interface Address {
+  region: string;
+  province: string;
+  city: string;
+  barangay: string;
+}
+
+interface ListingClientProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  listingData: any;
+  userData: { full_name?: string | null; avatar_url?: string | null } | null;
+  client: { id: string | null } | null;
+  address: Address | null;
+  paymentsEnabled: boolean;
+}
+
+export default function ListingClient({ listingData, userData, client, address, paymentsEnabled }: ListingClientProps) {
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+
+  // Already booked dates for this listing (dates only, no guest info)
+  const { data: reservations = [], isLoading, error } = trpc.listings.fetchReservation.useQuery({
+    listingId: listingData.id,
   });
+  const booked = reservations.map((r) => ({ from: new Date(r.startDate), to: new Date(r.endDate) }));
 
-  if (!listingData) return <NoListings />;
+  const category = getCategory(listingData.categoryName);
+  const CategoryIcon = category?.icon;
+  const hostSince = new Date(listingData.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
-  const regionName = getRegionName(listingData.regionCode);
-  const provinceName = getProvinceName(listingData.regionCode, listingData.provinceCode);
-  const cityName = getMunicipalityName(listingData.provinceCode, listingData.munCityCode);
-  const barangayName = getBarangayName(listingData.munCityCode, listingData.barangayCode);
+  const facts = [
+    { icon: Users, label: `${listingData.guests} guest${listingData.guests === 1 ? "" : "s"}` },
+    { icon: BedDouble, label: `${listingData.bedrooms} bedroom${listingData.bedrooms === 1 ? "" : "s"}` },
+    { icon: Bath, label: `${listingData.bathrooms} bath${listingData.bathrooms === 1 ? "" : "s"}` },
+  ];
+
+  const addressRows = address
+    ? [
+        { label: "Barangay", value: address.barangay },
+        { label: "City / Municipality", value: address.city },
+        { label: "Province", value: address.province },
+        { label: "Region", value: address.region },
+      ]
+    : [];
 
   return (
-    <div className="w-full py-10 lg:w-[90%] xl:w-[75%] mx-auto mt-6 sm:mt-10 mb-8 sm:mb-12 px-4 sm:px-6 lg:px-0">
-      <h1 className="font-medium text-xl sm:text-2xl mb-4 sm:mb-5">{listingData?.title}</h1>
-      <div className="relative h-64 sm:h-96 lg:h-[550px]">
+    <article className="page-container max-w-[1200px] pt-6 sm:pt-10">
+      {/* Title */}
+      <header className="mb-5 sm:mb-6">
+        <h1 className="font-display text-3xl font-medium leading-tight tracking-tight sm:text-4xl">{listingData.title}</h1>
+        {address && (
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="size-4" />
+            {address.city}, {address.province}
+          </p>
+        )}
+      </header>
+
+      {/* Photo */}
+      <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-muted ring-1 ring-black/5 sm:aspect-[16/9] lg:aspect-[2/1]">
         <Image
-          alt="Image of Home"
-          src={getImageUrl(listingData?.photo)}
+          src={getImageUrl(listingData.photo)}
+          alt={listingData.title}
           fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 75vw"
-          className="rounded-lg h-full object-cover w-full"
+          priority
+          sizes="(min-width: 1200px) 1120px, 100vw"
+          className="object-cover"
         />
       </div>
 
-      <div className="flex flex-col lg:flex-row justify-between gap-6 lg:gap-x-24 mt-6 sm:mt-8 relative">
-        <div className="w-full lg:w-2/3">
-          <h3 className="text-lg sm:text-xl font-medium">
-            {listingData.title}
-          </h3>
+      <div className="mt-8 grid gap-10 lg:mt-12 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-16">
+        {/* Details */}
+        <div className="min-w-0 divide-y">
+          <section className="pb-8">
+            <ul className="flex flex-wrap gap-x-6 gap-y-2 text-[15px]">
+              {facts.map(({ icon: Icon, label }) => (
+                <li key={label} className="flex items-center gap-2">
+                  <Icon className="size-[18px] text-muted-foreground" strokeWidth={1.75} />
+                  {label}
+                </li>
+              ))}
+            </ul>
 
-          <div className="flex gap-x-2 text-sm sm:text-base text-muted-foreground">
-            <p>{listingData?.guests} Guests</p> * <p>{listingData?.bedrooms} Bedrooms</p> *{' '}
-            {listingData?.bathrooms} Bathrooms
-          </div>
-
-          <div className="flex items-center mt-4 sm:mt-6">
-            <img
-              src={
-                userData?.avatar_url ??
-                'https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg'
-              }
-              alt="User Profile"
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full"
-            />
-            <div className="flex flex-col ml-3 sm:ml-4">
-              <h3 className="font-medium text-sm sm:text-base">Hosted by {userData?.full_name}</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Host since{' '}
-                {new Date(listingData?.created_at).toLocaleDateString('en-US', {
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
-            </div>
-          </div>
-
-          <Separator className="my-5 sm:my-7" />
-          <CategoryShowcase categoryName={listingData?.categoryName as string} />
-          <Separator className="my-5 sm:my-7" />
-          <p className="text-sm sm:text-base text-muted-foreground">{listingData?.description}</p>
-          <Separator className="my-5 sm:my-7" />
-
-          <div className="w-full flex lg:flex-col gap-8 flex-col-reverse lg:w-2/3">
-            <CalendarReservation dateRange={dateRange} listingId={listingData.id} setDateRange={setDateRange} />
-            <div className="lg:-ml-10 mt-6 sm:mt-8">
-              <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Address Details</h2>
-              <div className="space-y-1">
-                <div className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-medium mb-1">Province</p>
-                    <p className="text-sm sm:text-base text-gray-900">{provinceName}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-medium mb-1">City / Municipality</p>
-                    <p className="text-sm sm:text-base text-gray-900">{cityName}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 font-medium mb-1">Barangay</p>
-                    <p className="text-sm sm:text-base text-gray-900">{barangayName}</p>
-                  </div>
-                </div>
+            <div className="mt-6 flex items-center gap-3">
+              <Avatar src={userData?.avatar_url} name={userData?.full_name} className="size-11" />
+              <div>
+                <p className="font-medium">Hosted by {userData?.full_name ?? "a local host"}</p>
+                <p className="text-sm text-muted-foreground">Hosting since {hostSince}</p>
               </div>
             </div>
-          </div>
+          </section>
+
+          {category && CategoryIcon && (
+            <section className="flex items-start gap-4 py-8">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-muted">
+                <CategoryIcon className="size-5" strokeWidth={1.75} />
+              </span>
+              <div>
+                <h2 className="font-medium">{category.title}</h2>
+                <p className="text-sm text-muted-foreground">{category.description}</p>
+              </div>
+            </section>
+          )}
+
+          <section className="py-8">
+            <h2 className="font-display text-xl font-medium">About this place</h2>
+            <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-muted-foreground">
+              {listingData.description}
+            </p>
+          </section>
+
+          <section className="py-8">
+            {isLoading ? (
+              <p className="text-sm text-muted-foreground">Loading availability…</p>
+            ) : error ? (
+              <p className="text-sm text-destructive">Couldn&apos;t load availability. Please refresh the page.</p>
+            ) : (
+              <StayCalendar dateRange={dateRange} setDateRange={setDateRange} booked={booked} />
+            )}
+          </section>
+
+          {addressRows.length > 0 && (
+            <section className="py-8">
+              <h2 className="font-display text-xl font-medium">Where you&apos;ll be</h2>
+              <dl className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                {addressRows.map((row) => (
+                  <div key={row.label}>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{row.label}</dt>
+                    <dd className="mt-0.5 text-[15px]">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
         </div>
 
-        <div className="w-full lg:w-auto lg:flex-shrink-0">
+        {/* Booking */}
+        <aside id="book" className="scroll-mt-40 lg:sticky lg:top-28 lg:self-start">
           <ReservationCard
-            userId={client?.id}
+            userId={client?.id ?? ""}
             checkIn={dateRange.from}
             checkOut={dateRange.to}
-            listingPrice={listingData?.price}
+            listingPrice={Number(listingData.price)}
             listingId={listingData.id}
             paymentsEnabled={paymentsEnabled}
             isOwner={!!client?.id && client.id === listingData.userId}
           />
+        </aside>
+      </div>
+
+      {/* Phones / tablets: price always in reach, jumps to the booking card */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card lg:hidden">
+        <div className="page-container flex h-20 items-center justify-between">
+          <p>
+            <span className="font-display text-lg font-medium">{formatPrice(listingData.price)}</span>
+            <span className="text-sm text-muted-foreground"> / night</span>
+          </p>
+          <a
+            href="#book"
+            className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          >
+            Check dates
+          </a>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

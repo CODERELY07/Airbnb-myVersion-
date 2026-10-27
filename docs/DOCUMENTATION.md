@@ -52,11 +52,14 @@ app/
   api/payments/route.ts       Create reservation + PayMongo GCash source
   api/payments/verify/route.ts  Confirm payment, mark reservation paid
   api/trpc/[trpc]/route.ts    tRPC HTTP handler
-  components/                 UI pieces (cards, navbar, search bar, forms)
+  components/                 UI pieces. Shared building blocks:
+                                ListingCardShell / ListingCard / UpdateListingCard, ListingGrid,
+                                PageHeader, NoListings (empty state), StayCalendar (search + booking),
+                                DescriptionFields + AddressFields (create & edit), StepHeader,
+                                CreationBottomBar, StatusCard (payment pages), Avatar
   lib/                        Categories, countries, PSGC location helpers
 components/
-  ui/                         shadcn/ui components
-  CalendarReservation.tsx     Booking calendar
+  ui/                         shadcn/ui components (calendar restyled: ink selection)
 lib/
   supabase/auth.ts            getClientUserProfile()
   supabase/listings.ts        Server Actions (create, edit, delete, favorites)
@@ -270,3 +273,22 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 | Payment stays "Something went wrong" | Check `SUPABASE_SERVICE_ROLE_KEY` and `PAYMONGO_SECRET_KEY`, and that you authorized the test payment. |
 | "Online payment is not available right now." | `PAYMONGO_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` is missing. This is expected if you don't use payments. |
 | "Demo accounts are not available right now." | Set `DEMO_ACCOUNT_PASSWORD`, enable the Email provider, and run `npm run demo:accounts`. |
+
+## 10. Design system
+
+All tokens live in `app/globals.css`; components only use the Tailwind names below.
+
+| Token | Value | Used for |
+|---|---|---|
+| `background` / `card` | `#ffffff` | Page and surfaces |
+| `foreground` | `#1f1b17` | Text, selected dates, active category |
+| `muted` / `muted-foreground` | `#efebe6` / `#6b625a` | Placeholders, secondary text |
+| `border` | `#e7e1d9` | 1px hairlines |
+| `primary` | `#d64550` | The one accent: search, reserve, hearts |
+| `destructive` / `success` | `#b42318` / `#2f7d57` | Errors, payment success |
+
+- **Type:** Geist for text, Fraunces (`font-display`) for headings and prices.
+- **Elevation:** `shadow-xs` … `shadow-xl` are soft, two-layer shadows (overridden in `@theme`).
+- **Radius:** `rounded-xl` for inputs and tiles, `rounded-2xl` for cards and photos, full for pills.
+- **Layout:** `page-container` (max 1360px, 16/24/40px gutters) and `ListingGrid` (1 → 5 columns).
+- **Icons:** lucide-react only; category icons are defined in `app/lib/categoryItems.ts`.

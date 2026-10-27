@@ -1,38 +1,27 @@
+"use client";
 
-"use client"
-
+import { useActionState } from "react";
 import { CreationBottomBar } from "@/app/components/CreationBottomBar";
 import { SelectedCategory } from "@/app/components/SelectedCategory";
+import { StepHeader } from "@/app/components/StepHeader";
 import { createCategoryAction } from "@/lib/supabase/listings";
-import { useActionState } from "react";
 
-interface StructureFormProps {
-  listingId: string;
-}
-
-interface FormState {
-  error: string | null;
-}
-
-export function StructureForm({ listingId }: StructureFormProps) {
-  const initialState: FormState = { error: null };
-  const [state, formAction] = useActionState<FormState, FormData>(
-    createCategoryAction, 
-    initialState
-  );
+export function StructureForm({ listingId }: { listingId: string }) {
+  const [state, formAction] = useActionState<{ error: string | null }, FormData>(createCategoryAction, {
+    error: null,
+  });
 
   return (
     <form action={formAction}>
       <input type="hidden" name="listingId" value={listingId} />
-      
-      {state?.error && (
-        <div className="mb-4 p-3 sm:p-4 bg-red-50 border max-w-3xl my-3 mx-4 sm:mx-auto border-red-200 rounded-lg">
-          <p className="text-xs sm:text-sm font-medium">{state.error}</p>
-        </div>
-      )}
-      
+      <StepHeader
+        step={1}
+        title="Which of these best describes your home?"
+        description="Pick the one guests should find it under."
+        error={state?.error}
+      />
       <SelectedCategory />
-      <CreationBottomBar />
+      <CreationBottomBar step={1} />
     </form>
   );
 }

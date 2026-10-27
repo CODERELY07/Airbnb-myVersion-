@@ -1,32 +1,50 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import { Minus, Plus } from "lucide-react";
 
-export function Counter({ name, defaultValue }: { name: string; defaultValue?: number }) {
-  const [amount, setAmount] = useState(defaultValue || 0);
+export function Counter({
+  name,
+  label,
+  defaultValue = 1,
+  min = 1,
+  max = 20,
+}: {
+  name: string;
+  label: string;
+  defaultValue?: number;
+  min?: number;
+  max?: number;
+}) {
+  const [amount, setAmount] = useState(Math.min(max, Math.max(min, defaultValue)));
 
-  function increase() {
-    setAmount(amount + 1);
-  }
-
-  function decrease() {
-    if (amount > 0) {
-      setAmount(amount - 1);
-    }
-  }
+  const buttonClass =
+    "grid size-9 place-items-center rounded-full border bg-card transition hover:border-foreground disabled:pointer-events-none disabled:opacity-30";
 
   return (
-    <div className="flex items-center gap-x-4">
+    <div className="flex items-center gap-4">
       <input type="hidden" name={name} value={amount} />
-      <Button variant="outline" size="icon" type="button" onClick={decrease}>
-        <Minus className="h-4 w-4 text-primary" />
-      </Button>
-      <p className="font-medium text-lg">{amount}</p>
-      <Button variant="outline" size="icon" type="button" onClick={increase}>
-        <Plus className="h-4 w-4 text-primary" />
-      </Button>
+      <button
+        type="button"
+        aria-label={`Fewer ${label}`}
+        className={buttonClass}
+        disabled={amount <= min}
+        onClick={() => setAmount((a) => Math.max(min, a - 1))}
+      >
+        <Minus className="size-4" />
+      </button>
+      <span className="w-6 text-center text-base tabular-nums" aria-live="polite">
+        {amount}
+      </span>
+      <button
+        type="button"
+        aria-label={`More ${label}`}
+        className={buttonClass}
+        disabled={amount >= max}
+        onClick={() => setAmount((a) => Math.min(max, a + 1))}
+      >
+        <Plus className="size-4" />
+      </button>
     </div>
   );
 }

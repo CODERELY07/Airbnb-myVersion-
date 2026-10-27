@@ -1,46 +1,51 @@
 import { redirect } from "next/navigation";
+import { CalendarCheck } from "lucide-react";
 import { getReservationListings } from "@/lib/supabase/listings";
-import { ListingCard } from "../components/ListingCard";
-import { NoListings } from "../components/NoListings";
 import { getClientUserProfile } from "@/lib/supabase/auth";
+import { ListingCard } from "../components/ListingCard";
+import { ListingGrid } from "../components/ListingGrid";
+import { NoListings } from "../components/NoListings";
+import { PageHeader } from "../components/PageHeader";
+
+const shortDate: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
 
 export default async function Reservation() {
   const userProfile = await getClientUserProfile();
-  const userId = userProfile?.id as string;
-
+  const userId = userProfile?.id;
   if (!userId) return redirect("/");
 
-  const reservations = await getReservationListings(userId);
+  // skip reservations whose listing was deleted
+  const reservations = ((await getReservationListings(userId)) ?? []).filter((r) => r.listings);
 
   return (
-    <section className="container mx-auto pb-10 px-5 lg:px-10 mt-10">
-      <h2 className="text-3xl font-semibold tracking-tight">Your Reservations</h2>
+    <div className="page-container">
+      <PageHeader title="Reservations" description="Your confirmed, paid stays." />
 
-      {reservations?.length === 0 ? (
+      {reservations.length === 0 ? (
         <NoListings
-          title="No reservations found"
-          description="You haven't made any reservations yet."
+          icon={CalendarCheck}
+          title="No reservations yet"
+          description="When you book and pay for a stay, it shows up here."
+          action={{ href: "/", label: "Find a stay" }}
         />
       ) : (
-          <div className="grid grid-cols-2  sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
-          {reservations?.map((reservation) => (
+        <ListingGrid>
+          {reservations.map((reservation) => (
             <ListingCard
               key={reservation.id}
-              description={reservation.listings?.description ?? ""}
-              imagePath={reservation.listings?.photo ?? ""}
-              location={reservation.listings?.country ?? ""}
-              price={reservation.listings?.price ?? 0}
-              userId={userId}
-              pathName="/"
+              listingId={reservation.listings.id}
+              imagePath={reservation.listings.photo}
               title={reservation.listings.title}
-              favoriteId={reservation.id}
-              isInFavoriteList={false}
-              isFavRemove={true}
-              listingId={reservation.listings?.id ?? ""}
+              subtitle={`${new Date(reservation.startDate).toLocaleDateString("en-US", shortDate)} – ${new Date(
+                reservation.endDate
+              ).toLocaleDateString("en-US", shortDate)}`}
+              price={reservation.listings.price}
+              pathName="/reservations"
+              showFavorite={false}
             />
           ))}
-        </div>
+        </ListingGrid>
       )}
-    </section>
+    </div>
   );
 }

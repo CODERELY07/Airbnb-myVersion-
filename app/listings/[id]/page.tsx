@@ -1,16 +1,34 @@
-import React from 'react'; 
-import { getListingData } from '@/lib/supabase/listings';
-import ListingClient from '@/app/components/ListingClient';
-import { getClientUserProfile } from '@/lib/supabase/auth';
-import { isPaymentEnabled } from '@/lib/utils';
+import { getListingData } from "@/lib/supabase/listings";
+import { getClientUserProfile } from "@/lib/supabase/auth";
+import { isPaymentEnabled } from "@/lib/utils";
+import ListingClient from "@/app/components/ListingClient";
+import { NoListings } from "@/app/components/NoListings";
+import { getListingAddress } from "@/app/lib/locaitonHelpers";
 
 export default async function ListingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params; 
-  const data = await getListingData(id); 
-  const userLogged = await getClientUserProfile();
+  const { id } = await params;
+  const [data, userLogged] = await Promise.all([getListingData(id), getClientUserProfile()]);
 
-  // Hide online payment when PayMongo is not configured
-  const paymentsEnabled = isPaymentEnabled();
+  if (!data.listing) {
+    return (
+      <div className="page-container pt-12">
+        <NoListings
+          title="This stay isn't available"
+          description="It may have been removed by the host."
+          action={{ href: "/", label: "Browse stays" }}
+        />
+      </div>
+    );
+  }
 
-  return <ListingClient listingData={data.listing} userData={data.user} client={userLogged} paymentsEnabled={paymentsEnabled}/>;
+  return (
+    <ListingClient
+      listingData={data.listing}
+      userData={data.user}
+      client={userLogged}
+      // Resolved here so the PSGC data never ships to the browser
+      address={getListingAddress(data.listing)}
+      paymentsEnabled={isPaymentEnabled()}
+    />
+  );
 }

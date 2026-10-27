@@ -1,188 +1,24 @@
-// Client Component - app/create/[id]/address/page.tsx
-"use client";
-
+import { AddressFields } from "@/app/components/AddressFields";
 import { CreationBottomBar } from "@/app/components/CreationBottomBar";
-import {
-  listRegions,
-  listProvinces,
-  listMuncities,
-  listBarangays,
-} from '@jobuntux/psgc';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { StepHeader } from "@/app/components/StepHeader";
 import { createLocation } from "@/lib/supabase/listings";
-import { useState, use } from "react";
 
-interface AddressRouteProps {
+export default async function AddressRoute({
+  params,
+  searchParams,
+}: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
-}
-
-export default function AddressRoute({ params, searchParams }: AddressRouteProps) {
-  const { id } = use(params);
-  const { error } = use(searchParams);
-  const regions = listRegions();
-
-  const [regionCode, setRegionCode] = useState('');
-  const [provinceCode, setProvinceCode] = useState('');
-  const [munCityCode, setMunCityCode] = useState('');
-  const [barangayCode, setBarangayCode] = useState('');
-
-  const provinces = regionCode ? listProvinces(regionCode) : [];
-  const muncities = provinceCode ? listMuncities(provinceCode) : [];
-
-  const selectedProvince = provinces.find((p) => p.provCode === provinceCode);
-  const isHUC = selectedProvince?.cityClass === 'HUC';
-
-
-  const effectiveMunCityCode = isHUC
-    ? muncities[0]?.munCityCode 
-    : munCityCode;
-
-  const barangays = effectiveMunCityCode ? listBarangays(effectiveMunCityCode) : [];
+}) {
+  const { id } = await params;
+  const { error } = await searchParams;
 
   return (
-    <>
-      <div className="w-3/5 mx-auto mb-5">
-        <h2 className="text-3xl font-semibold tracking-tight transition-colors">
-          Where is your Home located?
-        </h2>
-
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600 text-sm font-medium">{error}</p>
-          </div>
-        )}
-      </div>
-
-      <form action={createLocation}>
-        <input type="hidden" name="listingId" value={id} />
-        <input type="hidden" name="regionCode" value={regionCode} />
-        <input type="hidden" name="provinceCode" value={provinceCode} />
-        <input type="hidden" name="munCityCode" value={munCityCode} />
-        <input type="hidden" name="barangayCode" value={barangayCode} />
-        
-        <div className="w-3/5 mx-auto mb-36">
-          <div className="mb-5">
-            <Select 
-              required 
-              value={regionCode} 
-              onValueChange={(value) => {
-                setRegionCode(value);
-                setProvinceCode('');
-                setMunCityCode('');
-                setBarangayCode('');
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a Region" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Select Region</SelectLabel>
-                  {regions.map((reg) => (
-                    <SelectItem key={reg.regCode} value={reg.regCode}>
-                      {reg.regionName}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mb-5">
-            <Select 
-              required 
-              value={provinceCode} 
-              onValueChange={(value) => {
-                setProvinceCode(value);
-                setMunCityCode('');
-                setBarangayCode('');
-              }}
-              disabled={!regionCode}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Province" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Select Province</SelectLabel>
-                  {provinces.map((prov) => (
-                    <SelectItem key={prov.provCode} value={prov.provCode as string}>
-                      {prov.provName}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mb-5">
-            <Select 
-              required 
-              value={munCityCode} 
-              onValueChange={(value) => {
-                setMunCityCode(value);
-                setBarangayCode('');
-              }}
-              disabled={!provinceCode || muncities.length === 1}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Municipality / City" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Select Municipality / City</SelectLabel>
-                  {muncities.map((mun) => (
-                    <SelectItem key={mun.munCityCode} value={mun.munCityCode}>
-                      {mun.munCityName}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mb-5">
-            <Select 
-              required 
-              value={barangayCode} 
-              onValueChange={(value) => {
-                setBarangayCode(value);
-              }}
-              disabled={!provinceCode || (!isHUC && !munCityCode)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Barangay" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Select Barangay</SelectLabel>
-                  {barangays.map((brgy) => {
-                    const brgyFullName = brgy.brgyOldName
-                      ? `${brgy.brgyName} (${brgy.brgyOldName})`
-                      : brgy.brgyName;
-                    return (
-                      <SelectItem key={brgy.brgyCode} value={brgy.brgyCode}>
-                        {brgyFullName}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <CreationBottomBar />
-      </form>
-    </>
+    <form action={createLocation}>
+      <input type="hidden" name="listingId" value={id} />
+      <StepHeader step={3} title="Where is your home?" description="Guests search by province, so pick the exact barangay." error={error} />
+      <AddressFields />
+      <CreationBottomBar step={3} />
+    </form>
   );
 }

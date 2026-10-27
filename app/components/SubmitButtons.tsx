@@ -1,96 +1,48 @@
-  "use client";
+"use client";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Heart, Loader2 } from "lucide-react";
 import { useFormStatus } from "react-dom";
 
-export function SubmitButtons() {
+// Primary submit for multi-step forms
+export function SubmitButtons({ label = "Next" }: { label?: string }) {
   const { pending } = useFormStatus();
-  // console.log(pending);
+
   return (
-    <>
+    <Button type="submit" size="lg" disabled={pending} className="min-w-28 rounded-full">
       {pending ? (
-        <Button disabled size="lg">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Please Wait
-        </Button>
+        <>
+          <Loader2 className="animate-spin" />
+          Saving
+        </>
       ) : (
-        <Button type="submit" size="lg">
-          Next
-        </Button>
+        label
       )}
-    </>
+    </Button>
   );
 }
 
-export function AddToFavoriteButton({isFav} : {isFav: boolean}) {
-  const { pending } = useFormStatus();
-  return (
-    <>
-      {pending ? (
-        <Button
-          variant="outline"
-          size="icon"
-          disabled
-          className="bg-primary-foreground"
-        >
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-        </Button>
-      ) : (
-        <Button
-          variant="outline"
-          size="icon"
-          className="bg-primary-foreground"
-          type="submit"
-        >
-          <Heart className="w-4 h-4" fill={isFav ? '#E21C49' : 'white'}/>
-        </Button>
-      )}
-    </>
-  );
-}
-
-export function  DeleteFromFavoriteButton() {
-  const { pending } = useFormStatus();
-  return (
-    <>
-      {pending ? (
-        <Button
-          variant="outline"
-          size="icon"
-          disabled
-          className="bg-primary-foreground"
-        >
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-        </Button>
-      ) : (
-        <Button
-          variant="outline"
-          size="icon"
-          className="bg-primary-foreground"
-          type="submit"
-        >
-          <Heart className="w-4 h-4 text-primary" fill="#E21C49" />
-        </Button>
-      )}
-    </>
-  );
-}
-
-export function ReservationSubmitButton() {
+// Heart on listing cards
+export function FavoriteButton({ active }: { active: boolean }) {
   const { pending } = useFormStatus();
 
   return (
-    <>
+    <button
+      type="submit"
+      disabled={pending}
+      aria-pressed={active}
+      aria-label={active ? "Remove from favorites" : "Save to favorites"}
+      className="grid size-9 place-items-center rounded-full bg-white/95 shadow-md ring-1 ring-black/5 transition hover:scale-105 active:scale-95 disabled:opacity-70"
+    >
       {pending ? (
-        <Button className="w-full" disabled>
-          <Loader2 className="w-4 h-4 animate-spin mr-2" /> Please wait...
-        </Button>
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
       ) : (
-        <Button className="w-full" type="submit">
-          Make a Reservation!
-        </Button>
+        <Heart
+          className={cn("size-[18px]", active ? "fill-primary text-primary" : "text-foreground")}
+          strokeWidth={2}
+        />
       )}
-    </>
+    </button>
   );
 }

@@ -39,6 +39,11 @@ export function getImageUrl(path?: string | null) {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${path}`
 }
 
+// Peso amount, e.g. ₱4,800
+export function formatPrice(amount?: number | string | null) {
+  return `₱${Number(amount ?? 0).toLocaleString("en-PH", { maximumFractionDigits: 0 })}`
+}
+
 // Number of nights between two dates
 export function getNights(checkIn: Date, checkOut: Date) {
   return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))

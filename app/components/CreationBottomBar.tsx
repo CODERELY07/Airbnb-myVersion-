@@ -1,16 +1,27 @@
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { SubmitButtons } from "./SubmitButtons";
 
-
-export function CreationBottomBar() {
+// Fixed footer for the create / edit steps, with a progress line
+export function CreationBottomBar({
+  step,
+  cancelHref = "/",
+  submitLabel,
+}: {
+  step: 1 | 2 | 3;
+  cancelHref?: string;
+  submitLabel?: string;
+}) {
   return (
-    <div className="fixed w-full bottom-0 z-10 bg-white border-t h-24">
-      <div className="flex items-center justify-between mx-auto px-5 lg:px-10 h-full">
-        <Button variant="secondary" size="lg" asChild>
-          <Link href="/">Cancel</Link>
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card">
+      <div className="h-1 bg-muted">
+        <div className="h-full bg-foreground transition-all" style={{ width: `${(step / 3) * 100}%` }} />
+      </div>
+      <div className="page-container flex h-20 items-center justify-between">
+        <Button variant="ghost" size="lg" className="rounded-full underline underline-offset-4" asChild>
+          <Link href={cancelHref}>Cancel</Link>
         </Button>
-        <SubmitButtons />
+        <SubmitButtons label={submitLabel ?? (step === 3 ? "Finish" : "Next")} />
       </div>
     </div>
   );

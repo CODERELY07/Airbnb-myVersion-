@@ -1,10 +1,11 @@
-import { MapFilterItems } from '../components/MapFilterItems';
-import { ListingCard } from '../components/ListingCard';
-import { Suspense } from 'react';
-import { serverCaller } from '@/trpc/server';
-import { SkeletonCard } from '../components/SkeletonCard';
-import { NoListings } from '../components/NoListings';
-import { getClientUserProfile } from '@/lib/supabase/auth';
+import { Suspense } from "react";
+import { serverCaller } from "@/trpc/server";
+import { getClientUserProfile } from "@/lib/supabase/auth";
+import { MapFilterItems } from "../components/MapFilterItems";
+import { ListingCard } from "../components/ListingCard";
+import { ListingGrid, ListingGridSkeleton } from "../components/ListingGrid";
+import { NoListings } from "../components/NoListings";
+import { getListingLocation } from "../lib/locaitonHelpers";
 
 interface SearchParams {
   destination?: string;
@@ -13,86 +14,74 @@ interface SearchParams {
   guests?: string;
   bedrooms?: string;
   bathrooms?: string;
-  filter?: string;
 }
 
-async function ShowSearchResults({ 
-  searchParams, 
-  userId 
-}: { 
-  searchParams: SearchParams; 
-  userId?: string 
-}) {
+// "3" -> 3, anything else -> undefined
+const toCount = (value?: string) => {
+  const n = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+};
+
+async function ShowSearchResults({ searchParams, userId }: { searchParams: SearchParams; userId?: string }) {
   const listings = await serverCaller.listings.searchListings({
     destination: searchParams.destination,
     checkIn: searchParams.checkIn,
     checkOut: searchParams.checkOut,
-    guests: searchParams.guests ? parseInt(searchParams.guests) : undefined,
-    bedrooms: searchParams.bedrooms ? parseInt(searchParams.bedrooms) : undefined,
-    bathrooms: searchParams.bathrooms ? parseInt(searchParams.bathrooms) : undefined,
-    filter: searchParams.filter,
+    guests: toCount(searchParams.guests),
+    bedrooms: toCount(searchParams.bedrooms),
+    bathrooms: toCount(searchParams.bathrooms),
   });
-
-  // console.log(listings);
 
   if (!listings?.length) {
     return (
       <NoListings
-        title="No listings found"
-        description="Try adjusting your search criteria to find more results"
+        title="No matching stays"
+        description="Try other dates, fewer guests or another province."
+        action={{ href: "/", label: "Browse all stays" }}
       />
     );
   }
 
   return (
-    <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-8">
-      {listings.map((listing) => (
-        <ListingCard
-          key={listing.id}
-          description={listing.description}
-          imagePath={listing.photo}
-          location={listing.country}
-          price={listing.price}
-          userId={userId}
-          title={listing.title}
-          pathName="/search"
-          favoriteId={listing.favorites[0]?.id}
-          isInFavoriteList={!!listing.favorites[0]?.id}
-          listingId={listing.id}
-        />
-      ))}
-    </div>
+    <>
+      <p className="mb-6 text-sm text-muted-foreground">
+        {listings.length} stay{listings.length === 1 ? "" : "s"} available
+      </p>
+      <ListingGrid>
+        {listings.map((listing) => (
+          <ListingCard
+            key={listing.id}
+            listingId={listing.id}
+            imagePath={listing.photo}
+            title={listing.title}
+            subtitle={getListingLocation(listing)}
+            price={listing.price}
+            userId={userId}
+            pathName="/search"
+            favoriteId={listing.favorites[0]?.id}
+            isInFavoriteList={!!listing.favorites[0]?.id}
+          />
+        ))}
+      </ListingGrid>
+    </>
   );
 }
 
-function SkeletonLoading() {
-  return (
-    <div className="grid lg:grid-cols-4 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-8">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <SkeletonCard key={i} />
-      ))}
-    </div>
-  );
-}
-
-
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams?: Promise<SearchParams>;
-}) {
+export default async function SearchPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   const userProfile = await getClientUserProfile();
-  const params = await searchParams || {};
+  const params = (await searchParams) || {};
 
   return (
-    <div className="container mx-auto px-5 lg:px-10">
+    <>
       <MapFilterItems />
-      <Suspense 
-        key={JSON.stringify(params)} 
-        fallback={<SkeletonLoading />}
-      >
-        <ShowSearchResults searchParams={params} userId={userProfile?.id} />
-      </Suspense>
-    </div>
+      <div className="page-container">
+        <div className="pb-2 pt-8 sm:pt-10">
+          <h1 className="font-display text-2xl font-medium tracking-tight sm:text-3xl">Search results</h1>
+        </div>
+        <Suspense key={JSON.stringify(params)} fallback={<ListingGridSkeleton />}>
+          <ShowSearchResults searchParams={params} userId={userProfile?.id} />
+        </Suspense>
+      </div>
+    </>
   );
 }

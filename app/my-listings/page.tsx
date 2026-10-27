@@ -1,33 +1,44 @@
-import { getClientUserProfile } from "@/lib/supabase/auth";
 import { redirect } from "next/navigation";
+import { House } from "lucide-react";
 import { serverCaller } from "@/trpc/server";
+import { getClientUserProfile } from "@/lib/supabase/auth";
+import { ListingGrid } from "../components/ListingGrid";
 import { NoListings } from "../components/NoListings";
-import { UpdateListing } from "../components/UpdateListing";
-
-
+import { PageHeader } from "../components/PageHeader";
+import { UpdateListingCard } from "../components/UpdateListingCard";
+import { getListingLocation } from "../lib/locaitonHelpers";
 
 export default async function MyHomes() {
   const userProfile = await getClientUserProfile();
   const userId = userProfile?.id;
+  if (!userId) return redirect("/");
 
-  if (!userId) {
-    return redirect("/");
-  }
-
-  const listings = await serverCaller.listings.fetchListings({userId});
-   
-  if (!listings?.length) {
-    return <NoListings           
-      title="You don't have Listings yet..."
-      description="Please Create ...!"
-    />;
-  }
+  const listings = await serverCaller.listings.fetchListings({ userId });
 
   return (
-    <section className="container mx-auto px-5 lg:px-10 mt-10">
-      <h2 className="text-3xl font-semibold tracking-tight">Your Listings</h2>
-      
-      <UpdateListing listings={listings} userId={userId} />
-    </section>
+    <div className="page-container">
+      <PageHeader title="My listings" description="Edit or remove the homes you host." />
+
+      {!listings?.length ? (
+        <NoListings
+          icon={House}
+          title="You haven't listed a home yet"
+          description="Open the menu and choose “List your home” to create your first listing."
+        />
+      ) : (
+        <ListingGrid>
+          {listings.map((listing) => (
+            <UpdateListingCard
+              key={listing.id}
+              listingId={listing.id}
+              imagePath={listing.photo}
+              title={listing.title}
+              subtitle={getListingLocation(listing)}
+              price={listing.price}
+            />
+          ))}
+        </ListingGrid>
+      )}
+    </div>
   );
 }

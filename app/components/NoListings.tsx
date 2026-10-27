@@ -1,16 +1,32 @@
-import { File } from "lucide-react";
-interface ListingProps {
-    title?: string,
-    description?: string
+import Link from "next/link";
+import { SearchX, type LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+interface EmptyStateProps {
+  title?: string;
+  description?: string;
+  icon?: LucideIcon;
+  action?: { href: string; label: string };
 }
-export function NoListings({title, description} : ListingProps){
-    return (
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-md p-8 border text-center border-dashed animate-in fade-in-50 mt-10">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-                <File className="w-10 text-primary h-10"/>
-            </div>
-            <h2 className="mt-6 text-md font-medium">{title}</h2>
-            <p className="mt-2 text-center text-sm leading-6 text-muted-foreground">{description}</p>
-        </div>
-    )
+
+export function NoListings({
+  title = "Nothing here yet",
+  description,
+  icon: Icon = SearchX,
+  action,
+}: EmptyStateProps) {
+  return (
+    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed bg-card/60 px-6 py-16 text-center">
+      <div className="grid size-14 place-items-center rounded-full bg-muted">
+        <Icon className="size-6 text-muted-foreground" strokeWidth={1.75} />
+      </div>
+      <h2 className="mt-5 font-display text-xl font-medium">{title}</h2>
+      {description && <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p>}
+      {action && (
+        <Button asChild variant="outline" className="mt-6 rounded-full">
+          <Link href={action.href}>{action.label}</Link>
+        </Button>
+      )}
+    </div>
+  );
 }

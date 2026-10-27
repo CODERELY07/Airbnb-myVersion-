@@ -1,48 +1,50 @@
-
 import { redirect } from "next/navigation";
-import { ListingCard } from "../components/ListingCard";
-import { getClientUserProfile } from "@/lib/supabase/auth";
-import { NoListings } from "../components/NoListings";
+import { Heart } from "lucide-react";
 import { serverCaller } from "@/trpc/server";
+import { getClientUserProfile } from "@/lib/supabase/auth";
+import { ListingCard } from "../components/ListingCard";
+import { ListingGrid } from "../components/ListingGrid";
+import { NoListings } from "../components/NoListings";
+import { PageHeader } from "../components/PageHeader";
+import { getListingLocation } from "../lib/locaitonHelpers";
 
 export default async function FavoriteRoute() {
-   const userProfile = await getClientUserProfile();
-   const userId = userProfile?.id;
-
+  const userProfile = await getClientUserProfile();
+  const userId = userProfile?.id;
   if (!userId) return redirect("/");
-   const favListings = await serverCaller.listings.fetchFavListings({userId});
-    if (!favListings?.length) {
-        return <NoListings  title="Hey you dont have any favorites"
-          description="Please add favorites to see them right here..."/>;
-    }
-  return (
-    <section className="container mx-atuo px-5 lg:px-10 mt-10">
-      <h2 className="text-3xl font-semibold tracking-tight">Your Favorites</h2>
 
-      {favListings.length === 0 ? (
+  // skip favorites whose listing was deleted
+  const favorites = ((await serverCaller.listings.fetchFavListings({ userId })) ?? []).filter((f) => f.listings);
+
+  return (
+    <div className="page-container">
+      <PageHeader title="Favorites" description="Stays you've saved. Tap the heart again to remove one." />
+
+      {favorites.length === 0 ? (
         <NoListings
-          title="Hey you dont have any favorites"
-          description="Please add favorites to see them right here..."
+          icon={Heart}
+          title="No favorites yet"
+          description="Tap the heart on any stay to save it here."
+          action={{ href: "/", label: "Explore stays" }}
         />
       ) : (
-       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
-          {favListings.map((favListing) => (
+        <ListingGrid>
+          {favorites.map((favorite) => (
             <ListingCard
-               key={favListing.listings.id}
-                description={favListing.listings.description}
-                imagePath={favListing.listings.photo}
-                location={favListing.listings.country}
-                price={favListing.listings.price}
-                userId={userId}
-                pathName='/'
-                favoriteId={favListing.id}
-                isInFavoriteList={true}
-                title={favListing.listings.title}
-                listingId={favListing.listings.id}
+              key={favorite.id}
+              listingId={favorite.listings.id}
+              imagePath={favorite.listings.photo}
+              title={favorite.listings.title}
+              subtitle={getListingLocation(favorite.listings)}
+              price={favorite.listings.price}
+              userId={userId}
+              pathName="/favorites"
+              favoriteId={favorite.id}
+              isInFavoriteList
             />
           ))}
-        </div>
+        </ListingGrid>
       )}
-    </section>
+    </div>
   );
 }

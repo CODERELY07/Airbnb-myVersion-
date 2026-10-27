@@ -1,73 +1,67 @@
-// Home page
-import { MapFilterItems } from './components/MapFilterItems';
-import { ListingCard } from './components/ListingCard';
-import { Suspense } from 'react';
-import { serverCaller } from '@/trpc/server';
-import { SkeletonCard } from './components/SkeletonCard';
-import { NoListings } from './components/NoListings';
-import { getClientUserProfile } from '@/lib/supabase/auth';
-
+import { Suspense } from "react";
+import { serverCaller } from "@/trpc/server";
+import { getClientUserProfile } from "@/lib/supabase/auth";
+import { MapFilterItems } from "./components/MapFilterItems";
+import { ListingCard } from "./components/ListingCard";
+import { ListingGrid, ListingGridSkeleton } from "./components/ListingGrid";
+import { NoListings } from "./components/NoListings";
+import { getCategory } from "./lib/categoryItems";
+import { getListingLocation } from "./lib/locaitonHelpers";
 
 async function ShowListings({ filter, userId }: { filter?: string; userId?: string }) {
-  const listings = await serverCaller.listings.fetchListings({
-    searchParams: filter,
-    // userId,
-  });
+  const listings = await serverCaller.listings.fetchListings({ searchParams: filter });
 
   if (!listings?.length) {
-    return <NoListings           
-      title="No Listings Available..."
-      description="Please check other category!"
-    />;
+    return (
+      <NoListings
+        title="No stays in this category yet"
+        description="Try another category, or browse everything."
+        action={{ href: "/", label: "Show all stays" }}
+      />
+    );
   }
- 
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
+    <ListingGrid>
       {listings.map((listing) => (
         <ListingCard
           key={listing.id}
-          description={listing.description}
+          listingId={listing.id}
           imagePath={listing.photo}
-          location={listing.country}
+          title={listing.title}
+          subtitle={getListingLocation(listing)}
           price={listing.price}
           userId={userId}
-          title={listing.title}
-          pathName='/'
+          pathName="/"
           favoriteId={listing.favorites[0]?.id}
-          isInFavoriteList={listing.favorites[0]?.id.length > 0 ? true : false}
-          listingId={listing.id}
+          isInFavoriteList={!!listing.favorites[0]?.id}
         />
       ))}
-    </div>
+    </ListingGrid>
   );
 }
 
-function SkeletonLoading() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-6 sm:mt-8">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <SkeletonCard key={i} />
-      ))}
-    </div>
-  );
-}
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>;
-}) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const userProfile = await getClientUserProfile();
-
-  const params = await searchParams;
-  const filter = params?.filter;
+  const { filter } = await searchParams;
+  const category = getCategory(filter);
 
   return (
-    <div className="container mx-auto px-4 sm:px-5 lg:px-10">
+    <>
       <MapFilterItems />
-      <Suspense key={filter} fallback={<SkeletonLoading />}>
-        <ShowListings filter={filter} userId={userProfile?.id} />
-      </Suspense>
-    </div>
+      <div className="page-container">
+        <div className="pb-6 pt-8 sm:pt-10">
+          <h1 className="font-display text-2xl font-medium tracking-tight sm:text-3xl">
+            {category ? category.title : "Stays across the Philippines"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {category ? category.description : "From island huts to mountain cabins, hosted by locals."}
+          </p>
+        </div>
+        <Suspense key={filter} fallback={<ListingGridSkeleton />}>
+          <ShowListings filter={filter} userId={userProfile?.id} />
+        </Suspense>
+      </div>
+    </>
   );
 }

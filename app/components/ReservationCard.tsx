@@ -1,8 +1,12 @@
-'use client';
-import React, { useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { getNights, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
+"use client";
+
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn, formatPrice, getNights, PAYMENT_UNAVAILABLE_MESSAGE } from "@/lib/utils";
+import AuthForm from "./Auth/AuthForm";
+
+const fieldDate: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
 
 export default function ReservationCard({
   userId,
@@ -23,16 +27,14 @@ export default function ReservationCard({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
 
-  const { nights, totalPrice } = useMemo(() => {
-    if (!checkIn || !checkOut) return { nights: 0, totalPrice: 0 };
-    const diffDays = getNights(checkIn, checkOut);
-    return { nights: diffDays, totalPrice: diffDays * listingPrice };
-  }, [checkIn, checkOut, listingPrice]);
+  const nights = checkIn && checkOut ? getNights(checkIn, checkOut) : 0;
+  const total = nights * listingPrice;
 
   const handlePayment = async () => {
     if (!checkIn || !checkOut || nights <= 0) {
-      setError('Please select valid check-in and check-out dates');
+      setError("Please select valid check-in and check-out dates.");
       return;
     }
 
@@ -40,136 +42,103 @@ export default function ReservationCard({
       setLoading(true);
       setError(null);
 
-      const res = await fetch('/api/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // price is calculated on the server
-        body: JSON.stringify({
-          listingId,
-          checkIn: checkIn.toISOString(),
-          checkOut: checkOut.toISOString(),
-        }),
+      // price is calculated on the server
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId, checkIn: checkIn.toISOString(), checkOut: checkOut.toISOString() }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        const errorMessage = Array.isArray(data.error)
-          ? data.error.map((e: any) => e.detail).join(', ')
-          : data.error || 'You already have a reservation for this listing. Please check your reservations.';
-        
-        setError(errorMessage);
-        setLoading(false);
-        return;
-      }
-
+      const data = await res.json().catch(() => ({}));
       const checkoutUrl = data?.data?.attributes?.redirect?.checkout_url;
 
-      if (!checkoutUrl) {
-      // console.error('Missing checkout URL in response:', data);
-        setError('Could not get payment URL. Please try again.');
+      if (!res.ok || !checkoutUrl) {
+        setError(typeof data.error === "string" ? data.error : "Could not start the payment. Please try again.");
         setLoading(false);
         return;
       }
 
-      // console.log('Redirecting to:', checkoutUrl);
-      
-      // Redirect to GCash payment page
+      // GCash checkout
       window.location.href = checkoutUrl;
-      
     } catch (err) {
-      console.error('Payment error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      console.error("Payment error:", err);
+      setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   };
 
+  // One place for the button state
+  let action;
+  if (isOwner) {
+    action = { label: "This is your listing", disabled: true, note: "Hosts can't book their own place." };
+  } else if (!paymentsEnabled) {
+    action = { label: "Reserve", disabled: true, note: PAYMENT_UNAVAILABLE_MESSAGE };
+  } else if (!userId) {
+    action = { label: "Log in to book", disabled: false, onClick: () => setShowAuth(true), note: "You won't be charged yet." };
+  } else {
+    action = {
+      label: "Reserve with GCash",
+      disabled: loading || nights <= 0,
+      onClick: handlePayment,
+      note: nights > 0 ? "You'll finish payment on GCash." : "Pick your dates in the calendar.",
+    };
+  }
+
   return (
-    <div className="w-[350px] lg:sticky lg:top-4 p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-start">
-      <div className="w-full max-w-md lg:max-w-xl bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-200">
-        <div className="mb-4 sm:mb-6">
-          <div className="flex items-baseline gap-2 mb-1">
-            <span className="text-2xl sm:text-3xl lg:text-4xl font-semibold">
-              ₱{listingPrice.toLocaleString()}
-            </span>
-            <span className="text-gray-600 text-sm sm:text-base lg:text-lg">per night</span>
-          </div>
+    <div className="rounded-2xl border bg-card p-6 shadow-lg">
+      <p className="flex items-baseline gap-1.5">
+        <span className="font-display text-2xl font-medium">{formatPrice(listingPrice)}</span>
+        <span className="text-sm text-muted-foreground">/ night</span>
+      </p>
 
-          {nights > 0 && (
-            <p className="text-gray-600 text-xs sm:text-sm mt-1">
-              ₱{totalPrice.toLocaleString()} total for {nights} night
-              {nights !== 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-
-        <div className="border border-gray-300 rounded-lg sm:rounded-xl overflow-hidden mb-3 sm:mb-4">
-          <div className="grid grid-cols-2 border-b border-gray-300">
-            <div className="p-3 sm:p-4 text-left border-r border-gray-300">
-              <div className="text-xs font-semibold mb-1">CHECK-IN</div>
-              <div className="text-xs sm:text-sm lg:text-base font-medium">
-                {checkIn ? checkIn.toLocaleDateString('en-US') : 'Select date'}
-              </div>
-            </div>
-            <div className="p-3 sm:p-4 text-left">
-              <div className="text-xs font-semibold mb-1">CHECKOUT</div>
-              <div className="text-xs sm:text-sm lg:text-base font-medium">
-                {checkOut ? checkOut.toLocaleDateString('en-US') : 'Select date'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
-            <p className="text-xs sm:text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        {isOwner || !paymentsEnabled ? (
-          <Button className="w-full text-sm sm:text-base py-5 sm:py-6" disabled>
-            Reserve
-          </Button>
-        ) : userId ? (
-          <Button
-            className="w-full text-sm sm:text-base py-5 sm:py-6"
-            onClick={handlePayment}
-            disabled={loading || !checkIn || !checkOut || nights <= 0}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-2" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Processing...
-              </span>
-            ) : (
-              `Reserve`
-            )}
-          </Button>
-        ) : (
-          <Button className="w-full text-sm sm:text-base py-5 sm:py-6" asChild>
-            <Link href="/">Login to Make a Reservation</Link>
-          </Button>
-        )}
-
-        <p className="text-center text-gray-600 text-xs sm:text-sm mt-3">
-          {isOwner ? 'This is your listing.' : !paymentsEnabled ? PAYMENT_UNAVAILABLE_MESSAGE : userId ? "You'll be redirected to GCash to complete your Reservation" : "Please login to continue"}
-        </p>
+      <div className="mt-5 grid grid-cols-2 overflow-hidden rounded-xl border">
+        <DateField label="Check-in" date={checkIn} />
+        <DateField label="Checkout" date={checkOut} className="border-l" />
       </div>
+
+      {error && (
+        <p role="alert" className="mt-4 rounded-lg bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+
+      <Button
+        size="lg"
+        onClick={action.onClick}
+        disabled={action.disabled}
+        className="mt-5 h-12 w-full rounded-xl text-[15px] font-semibold"
+      >
+        {loading && <Loader2 className="animate-spin" />}
+        {loading ? "Starting payment…" : action.label}
+      </Button>
+      <p className="mt-3 text-center text-xs text-muted-foreground">{action.note}</p>
+
+      {nights > 0 && (
+        <dl className="mt-6 space-y-3 border-t pt-5 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">
+              {formatPrice(listingPrice)} × {nights} night{nights === 1 ? "" : "s"}
+            </dt>
+            <dd>{formatPrice(total)}</dd>
+          </div>
+          <div className="flex justify-between border-t pt-3 font-semibold">
+            <dt>Total</dt>
+            <dd>{formatPrice(total)}</dd>
+          </div>
+        </dl>
+      )}
+
+      {showAuth && <AuthForm toggleClick={() => setShowAuth(false)} />}
+    </div>
+  );
+}
+
+function DateField({ label, date, className }: { label: string; date?: Date; className?: string }) {
+  return (
+    <div className={cn("px-4 py-3", className)}>
+      <p className="text-[10px] font-semibold uppercase tracking-wide">{label}</p>
+      <p className={cn("mt-0.5 text-sm", !date && "text-muted-foreground")}>
+        {date ? date.toLocaleDateString("en-US", fieldDate) : "Add date"}
+      </p>
     </div>
   );
 }

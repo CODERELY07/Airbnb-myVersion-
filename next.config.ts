@@ -17,11 +17,6 @@ const nextConfig: NextConfig = {
     qualities: [50,100],
     remotePatterns: [
     {
-      hostname: "a0.muscache.com",
-      protocol: "https",
-      port: "",
-    },
-    {
       hostname: "lh3.googleusercontent.com",
       protocol: "https",
       port: "",

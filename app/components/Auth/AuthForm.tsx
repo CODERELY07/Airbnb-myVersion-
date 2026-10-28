@@ -33,6 +33,17 @@ const AuthForm = ({ toggleClick }: { toggleClick: () => void }) => {
     };
   }, [toggleClick]);
 
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setDemoError(null);
+    // On success the server redirects to Google; we only get here on failure
+    const result = await signInWithGoogle();
+    if (result?.error) setDemoError(result.error);
+    setGoogleLoading(false);
+  };
+
   const handleDemoLogin = async (role: string) => {
     setDemoLoading(role);
     setDemoError(null);
@@ -77,10 +88,11 @@ const AuthForm = ({ toggleClick }: { toggleClick: () => void }) => {
           <p className="mt-1 text-sm text-muted-foreground">Sign in to save favorites, book stays and list your home.</p>
 
           <button
-            onClick={() => signInWithGoogle()}
-            className="mt-6 flex h-12 w-full items-center justify-center gap-3 rounded-xl border bg-card text-sm font-medium shadow-xs transition hover:bg-accent"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading || demoLoading !== null}
+            className="mt-6 flex h-12 w-full items-center justify-center gap-3 rounded-xl border bg-card text-sm font-medium shadow-xs transition hover:bg-accent disabled:opacity-60"
           >
-            <GoogleMark />
+            {googleLoading ? <Loader2 className="size-5 animate-spin" /> : <GoogleMark />}
             Continue with Google
           </button>
 
@@ -95,7 +107,7 @@ const AuthForm = ({ toggleClick }: { toggleClick: () => void }) => {
               <button
                 key={account.role}
                 onClick={() => handleDemoLogin(account.role)}
-                disabled={demoLoading !== null}
+                disabled={demoLoading !== null || googleLoading}
                 className="flex flex-col items-start rounded-xl border bg-card p-4 text-left transition hover:border-foreground/30 hover:bg-accent disabled:opacity-60"
               >
                 <span className="flex items-center gap-2 text-sm font-semibold">

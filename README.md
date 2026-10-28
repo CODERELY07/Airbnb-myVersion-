@@ -56,6 +56,9 @@ This creates the tables, security rules (RLS), the trigger that copies Google us
 
 ### 4. Turn on Google login
 
+Short version below. The full step-by-step guide, with screens, testing, rotating the secret and fixes for
+common errors, is in [docs/GOOGLE_AUTH_SETUP.md](docs/GOOGLE_AUTH_SETUP.md).
+
 1. In Google Cloud Console create an **OAuth client ID** (Web application).
    Add this as an authorized redirect URI:
    `https://<your-project-ref>.supabase.co/auth/v1/callback`
@@ -131,6 +134,7 @@ Open http://localhost:3000, sign in with Google or a demo account, then choose *
 
 ## Documentation
 
+- [docs/GOOGLE_AUTH_SETUP.md](docs/GOOGLE_AUTH_SETUP.md): set up Google Cloud Console and Supabase for "Continue with Google".
 - [docs/FEATURES.md](docs/FEATURES.md): every feature with the files behind it, plus step-by-step
   recipes for adding categories, fields, pages, tables and more.
 - [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md): project structure, database, API,

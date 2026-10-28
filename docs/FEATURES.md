@@ -77,6 +77,9 @@ page.tsx / component  ──►  lib/supabase/listings.ts (Server Action)  ─�
 | `utils/supabase/server.ts`, `client.ts` | Supabase clients for server and browser |
 | `supabase/schema.sql` | `users` table and the `handle_new_user` trigger |
 
+**Setup:** Google login needs a Google Cloud OAuth client and the Supabase Google provider.
+See [GOOGLE_AUTH_SETUP.md](GOOGLE_AUTH_SETUP.md).
+
 **Protecting a page:** call `getClientUserProfile()` at the top and `redirect("/")` if it returns `null` (see `app/favorites/page.tsx`).
 
 ---

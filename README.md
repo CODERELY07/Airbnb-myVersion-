@@ -109,7 +109,7 @@ again replaces only the demo listings (photos under `demo/`); anything else crea
 npm run dev
 ```
 
-Open http://localhost:3000, sign in with Google or a demo account, then choose **Airbnb your Home** from the menu.
+Open http://localhost:3000, sign in with Google or a demo account, then choose **List your home** from the menu.
 
 ## Scripts
 
@@ -131,8 +131,10 @@ Open http://localhost:3000, sign in with Google or a demo account, then choose *
 
 ## Documentation
 
-See [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md) for the project structure, the database,
-the main flows (listing, booking, payment) and the security model.
+- [docs/FEATURES.md](docs/FEATURES.md): every feature with the files behind it, plus step-by-step
+  recipes for adding categories, fields, pages, tables and more.
+- [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md): project structure, database, API,
+  security model and design system.
 
 ## Testing payments
 

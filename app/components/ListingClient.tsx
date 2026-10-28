@@ -34,7 +34,11 @@ export default function ListingClient({ listingData, userData, client, address, 
   const { data: reservations = [], isLoading, error } = trpc.listings.fetchReservation.useQuery({
     listingId: listingData.id,
   });
-  const booked = reservations.map((r) => ({ from: new Date(r.startDate), to: new Date(r.endDate) }));
+  // Booked nights. The checkout day stays free so the next guest can check in that day.
+  const booked = reservations.map((r) => ({
+    from: new Date(r.startDate),
+    to: new Date(new Date(r.endDate).getTime() - 24 * 60 * 60 * 1000),
+  }));
 
   const category = getCategory(listingData.categoryName);
   const CategoryIcon = category?.icon;

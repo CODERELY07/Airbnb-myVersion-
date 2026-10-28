@@ -137,11 +137,16 @@ A listing appears publicly only when all three `added*` flags are `true`.
 | id | uuid PK | |
 | userId | uuid FK → users | guest |
 | listingId | uuid FK → listings | cascade delete |
-| startDate, endDate | timestamptz | |
+| startDate, endDate | timestamptz | midnight Manila time (`manilaMidnight()`), end > start |
 | nights | int | calculated on the server |
 | totalPrice | numeric | calculated on the server |
 | isPaid | bool | only the server can set it to true |
 | paymentSourceId | text | PayMongo source id |
+| paymentId | text | PayMongo payment id (for refunds) |
+
+**No double bookings:** the constraint `reservation_no_overlapping_paid` makes it impossible for two
+**paid** reservations of the same listing to overlap. Ranges are `[start, end)`, so the checkout day is
+free for the next guest. Hosts can read the reservations of their own listings (`reservation_select_host`).
 
 ### reservation_dates (view)
 Public, read-only: `listingId`, `startDate`, `endDate`, `isPaid`, `created_at`. Used by the calendar,
@@ -173,7 +178,8 @@ service role key. If the password env is missing, the modal shows *"Demo account
 
 ### Edit and delete
 `/edit/[id]/*` pages load the listing with `getOwnListing()`, which redirects if you don't own it.
-Delete removes the photo from storage, then the row.
+Delete is refused while the listing has **upcoming paid bookings**. Otherwise it removes the row, then the photo.
+Listing fields are validated on the server by `lib/validation.ts` (title, description, ₱100+ price, 1–50 guests/rooms).
 
 ### Search
 `SearchBar` → `/search?destination=&checkIn=&checkOut=&guests=&bedrooms=&bathrooms=` →
@@ -182,15 +188,18 @@ removes listings that have a reservation overlapping the dates (the overlap chec
 
 ### Book and pay (GCash)
 ```
-ReservationCard ──POST /api/payments {listingId, checkIn, checkOut}
-   server: checks login → blocks booking your own listing → calculates nights and price from the DB
-           → deletes your own earlier unpaid attempts → checks duplicate and overlap
+ReservationCard ──POST /api/payments {listingId, checkIn: "2026-11-10", checkOut: "2026-11-13"}
+   server: checks login → blocks booking your own listing → dates become Manila midnight
+           → calculates nights and price from the DB → deletes your own earlier unpaid attempts
+           → max 2 unpaid bookings per guest → overlap check (fails closed if it can't check)
            → inserts reservation (isPaid=false) → creates PayMongo GCash source
            → saves paymentSourceId → returns checkout_url
-Browser ──► PayMongo GCash page
-   success ─► /payment/success ──POST /api/payments/verify {reservationId}
-                server: source status must be "chargeable" → creates the PayMongo payment
-                        → payment status must be "paid" → sets isPaid = true
+Browser ──► PayMongo GCash page (guest authorizes)
+   ├─ PayMongo ──POST /api/payments/webhook  (event source.chargeable, signed)
+   └─ success ─► /payment/success ──POST /api/payments/verify {reservationId}
+        both call confirmReservationPayment() in lib/paymongo.ts:
+          amount must match → charge the source (once, even if both run) → isPaid = true
+          dates taken meanwhile? the DB refuses → automatic refund → guest sees why
    failed  ─► /payment/failed  → deletes the unpaid reservation
 ```
 
@@ -230,7 +239,8 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 | Route | Method | Body | Returns |
 |---|---|---|---|
 | `/api/payments` | POST | `{ listingId, checkIn, checkOut }` | PayMongo source (`data.attributes.redirect.checkout_url`) |
-| `/api/payments/verify` | POST | `{ reservationId }` | `{ success: true }` or an error |
+| `/api/payments/verify` | POST | `{ reservationId }` | `{ success: true }`, or `402` not paid yet, `409` dates taken (refunded) |
+| `/api/payments/webhook` | POST | PayMongo event (signed with `Paymongo-Signature`) | `{ received: true }`; `401` bad signature |
 | `/auth/callback` | GET | `?code=&next=` | Redirect |
 
 ## 7. Security model
@@ -241,7 +251,14 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 - **Reservations can't be marked paid from the browser.** There is no update policy, and inserts
   must have `isPaid = false`. Only `/api/payments/verify` (service role) sets `isPaid`, after PayMongo confirms.
 - **The price is calculated on the server** from `listings.price` and the dates. The client only sends ids and dates.
-- **Double booking is blocked** on the server by an overlap check before inserting.
+- **Double booking is impossible:** an overlap check before inserting, and a database constraint
+  that refuses two overlapping paid bookings (the losing payment is refunded automatically).
+- **Webhook is signed:** `/api/payments/webhook` checks the HMAC-SHA256 `Paymongo-Signature` with
+  `PAYMONGO_WEBHOOK_SECRET` and rejects anything older than 10 minutes.
+- **Payments are idempotent:** the success page and the webhook can both run; the source is charged once,
+  and the charged amount must equal the server-calculated price.
+- **Holds are limited:** one guest can hold at most 2 unpaid bookings (30 minutes each).
+- **Listing data is validated on the server** (`lib/validation.ts`), not just in the form.
 - **The service role key** is only used in `utils/supabase/admin.ts`, which is marked `server-only`.
 - **Uploads** are limited to images up to 5 MB by the storage bucket, and file names are sanitized (`safeFileName()`).
 - **Open redirect protection:** `/auth/callback` only accepts relative `next` paths.
@@ -258,6 +275,7 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes | all Supabase clients |
 | `SUPABASE_SERVICE_ROLE_KEY` | **no** | `utils/supabase/admin.ts` |
 | `PAYMONGO_SECRET_KEY` | **no** | `/api/payments`, `/api/payments/verify` (optional) |
+| `PAYMONGO_WEBHOOK_SECRET` | **no** | `/api/payments/webhook` (recommended with payments) |
 | `NEXT_PUBLIC_BASE_URL` | yes | OAuth and payment redirects (`lib/utils.ts`) |
 | `DEMO_ACCOUNT_PASSWORD` | **no** | `signInAsDemo`, `scripts/create-demo-accounts.mjs` (optional) |
 
@@ -272,7 +290,17 @@ Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
 | Photos don't load | Check that the `images` bucket exists and is public, and that `NEXT_PUBLIC_SUPABASE_URL` is right. |
 | Payment stays "Something went wrong" | Check `SUPABASE_SERVICE_ROLE_KEY` and `PAYMONGO_SECRET_KEY`, and that you authorized the test payment. |
 | "Online payment is not available right now." | `PAYMONGO_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` is missing. This is expected if you don't use payments. |
+| Guest paid but the booking isn't confirmed | Set up the PayMongo webhook (below) so bookings confirm even if the guest closes the browser. |
 | "Demo accounts are not available right now." | Set `DEMO_ACCOUNT_PASSWORD`, enable the Email provider, and run `npm run demo:accounts`. |
+
+## PayMongo webhook
+
+Without it, a booking is only confirmed when the guest's browser comes back to `/payment/success`.
+
+1. PayMongo Dashboard → **Developers → Webhooks → Create webhook** (or `POST https://api.paymongo.com/v1/webhooks`).
+2. URL: `https://<your-domain>/api/payments/webhook`. Events: **`source.chargeable`**.
+3. Copy the webhook **secret key** (`whsk_…`) into `PAYMONGO_WEBHOOK_SECRET` in Vercel, then redeploy.
+4. Use a test webhook with `sk_test_` keys and a live one with `sk_live_` keys. The signature check picks the right one automatically.
 
 ## 10. Design system
 

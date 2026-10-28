@@ -2,9 +2,10 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { isPaymentEnabled, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
+import { confirmReservationPayment } from '@/lib/paymongo';
 
-// Called by /payment/success. Confirms the GCash payment with PayMongo
-// on the server before marking the reservation as paid.
+// Called by /payment/success when the guest comes back from GCash.
+// The webhook (/api/payments/webhook) does the same if the guest never comes back.
 export async function POST(req: NextRequest) {
   try {
     if (!isPaymentEnabled()) {
@@ -23,67 +24,33 @@ export async function POST(req: NextRequest) {
     if (typeof reservationId !== 'string' || !reservationId) {
       return NextResponse.json({ error: 'Missing reservation' }, { status: 400 });
     }
-    const admin = createAdminClient();
 
-    const { data: reservation } = await admin
+    const { data: reservation } = await createAdminClient()
       .from('reservation')
       .select('id, "totalPrice", "isPaid", "paymentSourceId"')
       .eq('id', reservationId)
       .eq('userId', user.id)
       .single();
 
-    if (!reservation?.paymentSourceId) {
+    if (!reservation) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
     }
 
-    if (reservation.isPaid) {
-      return NextResponse.json({ success: true });
+    const result = await confirmReservationPayment(reservation);
+
+    switch (result) {
+      case 'paid':
+        return NextResponse.json({ success: true });
+      case 'pending':
+        return NextResponse.json({ error: 'Payment not completed yet' }, { status: 402 });
+      case 'conflict':
+        return NextResponse.json(
+          { error: 'These dates were just booked by someone else. Your payment is being refunded.' },
+          { status: 409 }
+        );
+      default:
+        return NextResponse.json({ error: 'Payment failed' }, { status: 402 });
     }
-
-    const authHeader = `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64')}`;
-
-    // 1. The source must be authorized by the user in GCash
-    const sourceRes = await fetch(`https://api.paymongo.com/v1/sources/${reservation.paymentSourceId}`, {
-      headers: { Authorization: authHeader },
-    });
-    const source = await sourceRes.json();
-
-    if (source?.data?.attributes?.status !== 'chargeable') {
-      return NextResponse.json({ error: 'Payment not completed' }, { status: 402 });
-    }
-
-    // 2. Charge the source
-    const paymentRes = await fetch('https://api.paymongo.com/v1/payments', {
-      method: 'POST',
-      headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        data: {
-          attributes: {
-            amount: source.data.attributes.amount,
-            currency: 'PHP',
-            source: { id: reservation.paymentSourceId, type: 'source' },
-          },
-        },
-      }),
-    });
-    const payment = await paymentRes.json();
-
-    if (payment?.data?.attributes?.status !== 'paid') {
-      return NextResponse.json({ error: 'Payment failed' }, { status: 402 });
-    }
-
-    // 3. Mark as paid
-    const { error } = await admin
-      .from('reservation')
-      .update({ isPaid: true })
-      .eq('id', reservation.id);
-
-    if (error) {
-      console.error('Failed to mark reservation paid:', error);
-      return NextResponse.json({ error: 'Could not confirm payment' }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Payment verify error:', err);
     return NextResponse.json(

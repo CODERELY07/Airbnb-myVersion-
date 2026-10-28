@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarCheck, Heart, House, LogOut, Menu, Plus } from "lucide-react";
+import { CalendarCheck, CalendarDays, Heart, House, LogOut, Menu, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,7 @@ type Profile = Awaited<ReturnType<typeof getClientUserProfile>>;
 
 const menuLinks = [
   { href: "/my-listings", label: "My listings", icon: House },
+  { href: "/bookings", label: "Guest bookings", icon: CalendarDays },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/reservations", label: "Reservations", icon: CalendarCheck },
 ];

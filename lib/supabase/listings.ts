@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { safeFileName } from "@/lib/utils";
+import { firstError, MAX_PHOTO_BYTES, parseListingDetails } from "@/lib/validation";
 
 
 export async function createCategoryAction(prevState: any, formData: FormData) {
@@ -34,79 +35,41 @@ export async function createCategoryAction(prevState: any, formData: FormData) {
 }
 
 export async function createDescription(formData: FormData) {
+  const listingId = formData.get("listingId") as string;
+  const imageFile = formData.get("image") as File;
+  const back = (error: string) => redirect(`/create/${listingId}/description?error=${encodeURIComponent(error)}`);
 
-    const listingId = formData.get("listingId") as string;
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const price = formData.get("price") as string;
-    const imageFile = formData.get("image") as File;
-    const guests = formData.get("guest") as string;
-    const bedrooms = formData.get("bedroom") as string;
-    const bathrooms = formData.get("bathroom") as string;
+  if (!listingId) return redirect("/");
 
-    // Validate required fields
-    if (!listingId) {
-      return redirect(`/create?error=Missing listing ID`);
-    }
+  // Same rules as the API: price, counts and text lengths
+  const details = parseListingDetails(formData);
+  if (!details.success) return back(firstError(details.error));
 
-    if (!title || !description || !price) {
-      return redirect(`/create/${listingId}/description?error=Please fill in all required fields`);
-    }
+  if (!imageFile || imageFile.size === 0) return back("Please upload a photo.");
+  if (!imageFile.type.startsWith("image/")) return back("The photo must be an image file.");
+  if (imageFile.size > MAX_PHOTO_BYTES) return back("The photo must be smaller than 5 MB.");
 
-    if (!imageFile || imageFile.size === 0) {
-      return redirect(`/create/${listingId}/description?error=Please upload an image`);
-    }
+  const supabase = await createClient();
+  const filePath = `${listingId}/${Date.now()}-${safeFileName(imageFile.name)}`;
 
-    const guestsNum = Number(guests);
-    const bedroomsNum = Number(bedrooms);
-    const bathroomsNum = Number(bathrooms);
+  const { data: imageData, error: uploadError } = await supabase.storage
+    .from("images")
+    .upload(filePath, imageFile, { cacheControl: "2592000", contentType: imageFile.type });
 
-    if (guestsNum <= 0 || bedroomsNum <= 0 || bathroomsNum <= 0) {
-      return redirect(`/create/${listingId}/description?error=Please specify guests, bedrooms, and bathrooms`);
-    }
+  if (uploadError || !imageData?.path) {
+    console.error("Upload error:", uploadError);
+    return back("Failed to upload the photo. Please try again.");
+  }
 
-    // Validate image file size (e.g., max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (imageFile.size > maxSize) {
-      return redirect(`/create/${listingId}/description?error=Image size must be less than 5MB`);
-    }
+  try {
+    await serverCaller.createListing.createDescription({ ...details.data, listingId, photo: imageData.path });
+  } catch (err) {
+    console.error("createDescription failed:", err);
+    await supabase.storage.from("images").remove([imageData.path]);
+    return back("Could not save your listing. Please try again.");
+  }
 
-    const supabase = await createClient();
-
-    // Upload image
-    const filePath = `${listingId}/${Date.now()}-${safeFileName(imageFile.name)}`;
-
-    const { data: imageData, error: uploadError } = await supabase.storage
-      .from("images")
-      .upload(filePath, imageFile, {
-        cacheControl: "2592000",
-        contentType: imageFile.type,
-      });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      return redirect(`/create/${listingId}/description?error=Failed to upload image. Please try again.`);
-    }
-
-    const photoUrl = imageData?.path;
-
-    if (!photoUrl) {
-      return redirect(`/create/${listingId}/description?error=Image upload failed. Please try again.`);
-    }
-
-    // Create listing description
-    await serverCaller.createListing.createDescription({
-      title,
-      description,
-      price: price,
-      listingId,
-      bedrooms:bedrooms,
-      bathrooms: bathrooms,
-      guests: guests,
-      photo: photoUrl,
-    });
-
-    return redirect(`/create/${listingId}/address`);
+  return redirect(`/create/${listingId}/address`);
 }
 
 export async function createLocation(formData: FormData) {
@@ -202,61 +165,50 @@ export async function getReservationListings(userId: string){
 // update
 export async function updateListingDescription(formData: FormData) {
   const listingId = formData.get("listingId") as string;
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const price = formData.get("price") as string;
   const imageFile = formData.get("image") as File;
-  const guests = formData.get("guest") as string;
-  const bedrooms = formData.get("bedroom") as string;
-  const bathrooms = formData.get("bathroom") as string;
+  const back = (error: string) => redirect(`/edit/${listingId}/description?error=${encodeURIComponent(error)}`);
 
-  if (!listingId || !title || !description || !price || !bathrooms || !guests || !bedrooms) {
-    throw new Error("Missing required fields");
-  }
+  if (!listingId) return redirect("/my-listings");
+
+  const details = parseListingDetails(formData);
+  if (!details.success) return back(firstError(details.error));
 
   const supabase = await createClient();
-  let photoUrl: string | undefined;
+  let newPhoto: string | undefined;
+  let oldPhoto: string | undefined;
 
-  // Only upload new image if provided
+  // Optional new photo: upload first, swap in the DB, and only then delete the old one,
+  // so a failed upload never leaves the listing without a photo.
   if (imageFile && imageFile.size > 0) {
-    // Get old photo to delete it
-    const { data: listing } = await supabase
-      .from("listings")
-      .select("photo")
-      .eq("id", listingId)
-      .single();
+    if (!imageFile.type.startsWith("image/")) return back("The photo must be an image file.");
+    if (imageFile.size > MAX_PHOTO_BYTES) return back("The photo must be smaller than 5 MB.");
 
-    // Delete old image if exists
-    if (listing?.photo) {
-      await supabase.storage.from("images").remove([listing.photo]);
-    }
+    const { data: listing } = await supabase.from("listings").select("photo").eq("id", listingId).single();
+    oldPhoto = listing?.photo ?? undefined;
 
-    // Upload new image
     const filePath = `${listingId}/${Date.now()}-${safeFileName(imageFile.name)}`;
     const { data: imageData, error: uploadError } = await supabase.storage
       .from("images")
-      .upload(filePath, imageFile, {
-        cacheControl: "2592000",
-        contentType: imageFile.type,
-      });
+      .upload(filePath, imageFile, { cacheControl: "2592000", contentType: imageFile.type });
 
-    if (uploadError) {
-      throw new Error("Image upload failed");
+    if (uploadError || !imageData?.path) {
+      console.error("Upload error:", uploadError);
+      return back("Failed to upload the photo. Please try again.");
     }
-
-    photoUrl = imageData?.path;
+    newPhoto = imageData.path;
   }
 
-  await serverCaller.listings.updateListing({
-    listingId,
-    title,
-    description,
-    price,
-    bedrooms,
-    bathrooms,
-    guests,
-    ...(photoUrl && { photo: photoUrl }),
-  });
+  try {
+    await serverCaller.listings.updateListing({ listingId, ...details.data, ...(newPhoto && { photo: newPhoto }) });
+  } catch (err) {
+    console.error("updateListing failed:", err);
+    if (newPhoto) await supabase.storage.from("images").remove([newPhoto]);
+    return back("Could not save your changes. Please try again.");
+  }
+
+  if (newPhoto && oldPhoto && oldPhoto !== newPhoto) {
+    await supabase.storage.from("images").remove([oldPhoto]);
+  }
 
   redirect(`/edit/${listingId}/address`);
 }
@@ -299,20 +251,19 @@ export async function updateListingCategory(formData: FormData) {
   return redirect(`/edit/${listingId}/description`);
 }
 
-// TODO:: DOne delete finish CRUD then test
-export async function deleteListing(listingId: string) {
+// Returns { error } when the listing can't be deleted (e.g. it has upcoming paid bookings)
+export async function deleteListing(listingId: string): Promise<{ error?: string }> {
   const user = await getClientUserProfile();
-  const userId = user?.id;
+  if (!user?.id || !listingId) return { error: "Please log in again." };
 
-  if (!userId || !listingId) {
-    throw new Error("Missing required fields");
+  try {
+    await serverCaller.listings.deleteListing({ listingId, userId: user.id });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "";
+    // Show our own business messages; hide anything technical
+    return { error: message.startsWith("This listing") ? message : "Could not delete this listing. Please try again." };
   }
 
-  await serverCaller.listings.deleteListing({
-    listingId,
-    userId,
-  });
-
   revalidatePath("/my-listings");
-  redirect("/my-listings");
+  return {};
 }

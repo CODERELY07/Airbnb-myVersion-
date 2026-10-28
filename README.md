@@ -79,6 +79,7 @@ cp .env.example .env.local
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API (anon / publishable key) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (service_role). **Secret, server only.** |
 | `PAYMONGO_SECRET_KEY` | PayMongo → Developers → API keys (`sk_test_...`). Optional. |
+| `PAYMONGO_WEBHOOK_SECRET` | PayMongo → Developers → Webhooks (`whsk_...`). Recommended with payments, see [docs](docs/DOCUMENTATION.md#paymongo-webhook). |
 | `NEXT_PUBLIC_BASE_URL` | `http://localhost:3000` locally, your domain in production |
 | `DEMO_ACCOUNT_PASSWORD` | Any long password you choose. Optional, needed for demo accounts. |
 

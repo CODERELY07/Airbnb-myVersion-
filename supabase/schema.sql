@@ -132,6 +132,33 @@ create table if not exists public.reservation (
 );
 
 alter table public.reservation add column if not exists "paymentSourceId" text;
+-- PayMongo payment id, set when the payment is captured (needed for refunds)
+alter table public.reservation add column if not exists "paymentId" text;
+create index if not exists reservation_source_idx on public.reservation ("paymentSourceId");
+
+-- No double bookings: two PAID reservations of the same listing can never overlap.
+-- [start, end) so the checkout day is free for the next guest's check-in.
+create extension if not exists btree_gist;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'reservation_no_overlapping_paid') then
+    alter table public.reservation
+      add constraint reservation_no_overlapping_paid
+      exclude using gist (
+        "listingId" with =,
+        tstzrange("startDate", "endDate", '[)') with &&
+      ) where ("isPaid");
+  end if;
+end $$;
+
+-- A stay must end after it starts
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'reservation_valid_dates') then
+    alter table public.reservation add constraint reservation_valid_dates check ("endDate" > "startDate");
+  end if;
+end $$;
 
 create index if not exists reservation_listingid_idx on public.reservation ("listingId");
 create index if not exists reservation_userid_idx    on public.reservation ("userId");
@@ -195,6 +222,16 @@ drop policy if exists "reservation_select_all" on public.reservation;
 drop policy if exists "reservation_select_own" on public.reservation;
 create policy "reservation_select_own" on public.reservation
   for select to authenticated using (auth.uid() = "userId");
+
+-- Hosts can see the bookings of their own listings (Bookings page)
+drop policy if exists "reservation_select_host" on public.reservation;
+create policy "reservation_select_host" on public.reservation
+  for select to authenticated using (
+    exists (
+      select 1 from public.listings l
+      where l.id = reservation."listingId" and l."userId" = auth.uid()
+    )
+  );
 
 -- Public, read-only list of booked dates for the calendar, search and
 -- overlap check. No guest id or price. The view runs as its owner, so it can

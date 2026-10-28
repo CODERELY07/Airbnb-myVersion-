@@ -1,16 +1,19 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
-import { activeReservationFilter, BASE_URL, getNights, isPaymentEnabled, PAYMENT_UNAVAILABLE_MESSAGE } from '@/lib/utils';
+import { activeReservationFilter, BASE_URL, DAY_PATTERN, getNights, isPaymentEnabled, manilaMidnight, PAYMENT_UNAVAILABLE_MESSAGE, PENDING_PAYMENT_MINUTES } from '@/lib/utils';
+import { paymongo } from '@/lib/paymongo';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const MAX_NIGHTS = 90;
-const isDate = (v: string) => !Number.isNaN(Date.parse(v));
+// Unpaid bookings one guest may hold at the same time (stops one account blocking many dates)
+const MAX_PENDING_PER_GUEST = 2;
 
 const bodySchema = z.object({
   listingId: z.string().uuid(),
-  checkIn: z.string().refine(isDate),
-  checkOut: z.string().refine(isDate),
+  // calendar days, e.g. "2026-11-10"
+  checkIn: z.string().regex(DAY_PATTERN),
+  checkOut: z.string().regex(DAY_PATTERN),
 });
 
 export async function POST(req: NextRequest) {
@@ -44,9 +47,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { listingId, checkIn, checkOut } = parsed.data;
+    const { listingId } = parsed.data;
+    const checkIn = manilaMidnight(parsed.data.checkIn).toISOString();
+    const checkOut = manilaMidnight(parsed.data.checkOut).toISOString();
 
-    // No past check-ins (1 day of slack for time zones), no endless stays
+    // No past check-ins (today is fine), no endless stays
     const nights = getNights(new Date(checkIn), new Date(checkOut));
     const startsInPast = Date.parse(checkIn) < Date.now() - 24 * 60 * 60 * 1000;
 
@@ -88,38 +93,40 @@ export async function POST(req: NextRequest) {
       .eq("userId", user.id)
       .eq("isPaid", false);
 
-    // Check if user already has a reservation for this listing
-    const { data: existingReservations, error: fetchError } = await supabase
+    // Limit how many unpaid bookings one guest can hold at once
+    const pendingSince = new Date(Date.now() - PENDING_PAYMENT_MINUTES * 60 * 1000).toISOString();
+    const { count: pendingCount } = await supabase
       .from("reservation")
-      .select("id")
-      .eq("listingId", listingId)
+      .select("id", { count: "exact", head: true })
       .eq("userId", user.id)
-      .limit(1);
+      .eq("isPaid", false)
+      .gt("created_at", pendingSince);
 
-    if (fetchError) {
-      console.error("Error checking existing reservations:", fetchError);
+    if ((pendingCount ?? 0) >= MAX_PENDING_PER_GUEST) {
       return NextResponse.json(
-        { error: 'Unable to verify reservation availability' },
-        { status: 500 }
+        { error: 'You have unfinished payments. Complete or cancel them, or try again in a few minutes.' },
+        { status: 429 }
       );
     }
 
-    if (existingReservations && existingReservations.length > 0) {
-      return NextResponse.json(
-        { error: 'You already have a reservation for this listing. Please check your reservations.' },
-        { status: 409 }
-      );
-    }
-
-    // Check if the dates overlap someone else's reservation (public dates view)
-    const { data: overlapping } = await supabase
+    // Do the dates overlap a paid booking or a payment in progress? (checkout day is free for the next guest)
+    const { data: overlapping, error: overlapError } = await supabase
       .from("reservation_dates")
-      .select("id")
+      .select("listingId")
       .eq("listingId", listingId)
       .lt("startDate", checkOut)
       .gt("endDate", checkIn)
       .or(activeReservationFilter())
       .limit(1);
+
+    if (overlapError) {
+      // Never take a booking when availability can't be checked
+      console.error("Availability check failed:", overlapError);
+      return NextResponse.json(
+        { error: 'Unable to check availability. Please try again.' },
+        { status: 500 }
+      );
+    }
 
     if (overlapping && overlapping.length > 0) {
       return NextResponse.json(
@@ -152,14 +159,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Create PayMongo payment source
-    const paymongoResponse = await fetch('https://api.paymongo.com/v1/sources', {
+    const paymongoData = await paymongo('/sources', {
       method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(
-          process.env.PAYMONGO_SECRET_KEY + ':'
-        ).toString('base64')}`,
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         data: {
           attributes: {
@@ -185,9 +186,7 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    const paymongoData = await paymongoResponse.json();
-
-    if (paymongoData.errors) {
+    if (paymongoData.errors || !paymongoData.data?.id) {
 
       await supabase.from('reservation').delete().eq('id', reservation.id);
 
@@ -198,11 +197,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Save the source id so /api/payments/verify can confirm it later
-    await createAdminClient()
+    // Save the source id so verify / webhook can confirm it later
+    const { error: saveError } = await createAdminClient()
       .from('reservation')
       .update({ paymentSourceId: paymongoData.data.id })
       .eq('id', reservation.id);
+
+    if (saveError) {
+      // Without it the payment could never be matched to the booking: don't send the guest to pay
+      console.error('Could not save payment source:', saveError);
+      await supabase.from('reservation').delete().eq('id', reservation.id);
+      return NextResponse.json(
+        { error: 'Could not start the payment. Please try again.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(paymongoData, { status: 200 });
   } catch (err) {

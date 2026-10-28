@@ -10,6 +10,7 @@ export default function PaymentSuccess() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [message, setMessage] = useState<string | null>(null);
   const reservationId = searchParams.get("reservation_id");
   const verified = useRef(false);
 
@@ -29,8 +30,13 @@ export default function PaymentSuccess() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reservationId }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error(`verify failed: ${res.status}`);
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          // 409: dates taken while paying, the payment is refunded
+          if (res.status === 409 && typeof body.error === "string") setMessage(body.error);
+          throw new Error(`verify failed: ${res.status}`);
+        }
         setStatus("success");
         setTimeout(() => router.push("/reservations"), 3000);
       })
@@ -58,7 +64,10 @@ export default function PaymentSuccess() {
     <StatusCard
       tone="error"
       title="We couldn't confirm your payment"
-      description="If GCash charged you, it may take a minute to show up. Check your reservations, or try booking again."
+      description={
+        message ??
+        "If GCash charged you, it may take a minute to show up. Check your reservations, or try booking again."
+      }
     >
       <Button asChild className="h-11 rounded-xl">
         <Link href="/reservations">Check reservations</Link>

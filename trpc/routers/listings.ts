@@ -6,7 +6,8 @@
   import { createClient } from '@/utils/supabase/server';
   import { revalidatePath } from 'next/cache';
 import { getProvinceName } from '@/app/lib/locaitonHelpers';
-import { activeReservationFilter } from '@/lib/utils';
+import { activeReservationFilter, DAY_PATTERN, manilaMidnight } from '@/lib/utils';
+import { listingDetailsSchema } from '@/lib/validation';
 
 
   export const homeRouter = createTRPCRouter({
@@ -90,15 +91,9 @@ import { activeReservationFilter } from '@/lib/utils';
       }),
 
     createDescription: baseProcedure.input(
-        z.object({
-          title: z.string(),
-          description: z.string(),
-          price: z.string(),
-          bedrooms: z.string(),
-          bathrooms: z.string(),
-          guests: z.string(),
-          listingId: z.string(),
-          photo: z.string(), 
+        listingDetailsSchema.extend({
+          listingId: z.string().uuid(),
+          photo: z.string().min(1),
         })
       )
       .mutation(async ({ input }) => {
@@ -120,7 +115,7 @@ import { activeReservationFilter } from '@/lib/utils';
             {
               title,
               description,
-              price: Number(price),
+              price,
               bedrooms,
               bathrooms,
               guests,
@@ -341,12 +336,29 @@ import { activeReservationFilter } from '@/lib/utils';
 
       return data;
   }),
+  // Paid bookings of the logged-in host's listings (user from the session, not from input)
+  getHostBookings: baseProcedure.query(async () => {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+    const { data, error } = await supabase
+      .from('reservation')
+      .select('id, "startDate", "endDate", nights, "totalPrice", created_at, users(full_name, avatar_url), listings!inner(id, title, photo, "userId")')
+      .eq('listings.userId', user.id)
+      .eq('isPaid', true)
+      .order('startDate', { ascending: true });
+
+    if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+    return data ?? [];
+  }),
+
   searchListings: baseProcedure
   .input(
     z.object({
-      destination: z.string().optional(),
-      checkIn: z.string().optional(),
-      checkOut: z.string().optional(),
+      destination: z.string().regex(/^\d{3}$/).optional(), // PSGC province code
+      checkIn: z.string().regex(DAY_PATTERN).optional(),
+      checkOut: z.string().regex(DAY_PATTERN).optional(),
       guests: z.number().optional(),
       bedrooms: z.number().optional(),
       bathrooms: z.number().optional(),
@@ -366,7 +378,7 @@ import { activeReservationFilter } from '@/lib/utils';
       .order('created_at', { ascending: true });
 
     if (input.destination) {
-      query = query.ilike('provinceCode', `%${input.destination}%`);
+      query = query.eq('provinceCode', input.destination);
     }
     if (input.guests) {
       query = query.gte('guests', input.guests);
@@ -391,8 +403,9 @@ import { activeReservationFilter } from '@/lib/utils';
     const { data: bookedReservations, error: reservationsError } = await supabase
       .from('reservation_dates')
       .select('listingId')
-      .lte('startDate', input.checkOut)
-      .gte('endDate', input.checkIn)
+      // overlap = starts before my checkout and ends after my check-in (same-day turnover allowed)
+      .lt('startDate', manilaMidnight(input.checkOut).toISOString())
+      .gt('endDate', manilaMidnight(input.checkIn).toISOString())
       .or(activeReservationFilter());
 
     if (reservationsError) throw new Error(reservationsError.message);
@@ -409,15 +422,9 @@ import { activeReservationFilter } from '@/lib/utils';
 updateListing: baseProcedure
   .input(
     z.object({
-      listingId: z.string(),
-      title: z.string().optional(),
-      description: z.string().optional(),
-      price: z.string().optional(),
-      bedrooms: z.string().optional(),
-      bathrooms: z.string().optional(),
-      guests: z.string().optional(),
-      photo: z.string().optional(),
-    })
+      listingId: z.string().uuid(),
+      photo: z.string().min(1).optional(),
+    }).extend(listingDetailsSchema.partial().shape)
   )
   .mutation(async ({ input }) => {
     const supabase = await createClient();
@@ -427,11 +434,6 @@ updateListing: baseProcedure
     const filteredData = Object.fromEntries(
       Object.entries(updateData).filter(([_, v]) => v !== undefined)
     );
-
-    // Convert price to number if present
-    // if (filteredData.price) {
-    //   filteredData.price = Number(filteredData.price);
-    // }
 
     const { error } = await supabase
       .from("listings")
@@ -511,19 +513,27 @@ deleteListing: baseProcedure
       });
     }
 
-    // Delete the image from storage if it exists
-    if (listing.photo) {
-      const { error: storageError } = await supabase.storage
-        .from("images")
-        .remove([listing.photo]);
+    // Guests who already paid must not lose their booking
+    const { data: upcoming, error: bookingsError } = await supabase
+      .from("reservation_dates")
+      .select("listingId")
+      .eq("listingId", listingId)
+      .eq("isPaid", true)
+      .gt("endDate", new Date().toISOString())
+      .limit(1);
 
-      // Continue even if image deletion fails
-      if (storageError) {
-        console.error("Failed to delete image:", storageError);
-      }
+    if (bookingsError) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: bookingsError.message });
     }
 
-    // Delete the listing
+    if (upcoming && upcoming.length > 0) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "This listing has upcoming paid bookings, so it can't be deleted yet.",
+      });
+    }
+
+    // Delete the listing first, then its photo (a leftover photo is harmless, a missing one isn't)
     const { error: deleteError } = await supabase
       .from("listings")
       .delete()
@@ -534,6 +544,11 @@ deleteListing: baseProcedure
         code: "INTERNAL_SERVER_ERROR",
         message: deleteError.message,
       });
+    }
+
+    if (listing.photo) {
+      const { error: storageError } = await supabase.storage.from("images").remove([listing.photo]);
+      if (storageError) console.error("Failed to delete image:", storageError);
     }
   }),
 

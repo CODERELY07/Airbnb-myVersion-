@@ -44,6 +44,13 @@ export function formatPrice(amount?: number | string | null) {
   return `₱${Number(amount ?? 0).toLocaleString("en-PH", { maximumFractionDigits: 0 })}`
 }
 
+// Booking dates are calendar days in the Philippines ("2026-11-10").
+// Stored as midnight Manila time so everyone compares the same instants.
+export const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+export function manilaMidnight(day: string) {
+  return new Date(`${day}T00:00:00+08:00`)
+}
+
 // Number of nights between two dates
 export function getNights(checkIn: Date, checkOut: Date) {
   return Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))

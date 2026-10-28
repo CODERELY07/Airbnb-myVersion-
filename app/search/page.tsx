@@ -6,6 +6,7 @@ import { ListingCard } from "../components/ListingCard";
 import { ListingGrid, ListingGridSkeleton } from "../components/ListingGrid";
 import { NoListings } from "../components/NoListings";
 import { getListingLocation } from "../lib/locaitonHelpers";
+import { DAY_PATTERN } from "@/lib/utils";
 
 interface SearchParams {
   destination?: string;
@@ -16,21 +17,50 @@ interface SearchParams {
   bathrooms?: string;
 }
 
+// "2026-11-10" -> same, anything else (typed into the URL) -> undefined
+const toDay = (value?: string) =>
+  value && DAY_PATTERN.test(value) ? value : undefined;
+
+// Province codes are 3 digits ("053")
+const toProvince = (value?: string) =>
+  value && /^\d{3}$/.test(value) ? value : undefined;
+
 // "3" -> 3, anything else -> undefined
 const toCount = (value?: string) => {
   const n = Number.parseInt(value ?? "", 10);
   return Number.isFinite(n) && n > 0 ? n : undefined;
 };
 
-async function ShowSearchResults({ searchParams, userId }: { searchParams: SearchParams; userId?: string }) {
-  const listings = await serverCaller.listings.searchListings({
-    destination: searchParams.destination,
-    checkIn: searchParams.checkIn,
-    checkOut: searchParams.checkOut,
-    guests: toCount(searchParams.guests),
-    bedrooms: toCount(searchParams.bedrooms),
-    bathrooms: toCount(searchParams.bathrooms),
-  });
+async function ShowSearchResults({
+  searchParams,
+  userId,
+}: {
+  searchParams: SearchParams;
+  userId?: string;
+}) {
+  const listings = await serverCaller.listings
+    .searchListings({
+      destination: toProvince(searchParams.destination),
+      checkIn: toDay(searchParams.checkIn),
+      checkOut: toDay(searchParams.checkOut),
+      guests: toCount(searchParams.guests),
+      bedrooms: toCount(searchParams.bedrooms),
+      bathrooms: toCount(searchParams.bathrooms),
+    })
+    .catch((err) => {
+      console.error("Search failed:", err);
+      return null;
+    });
+
+  if (listings === null) {
+    return (
+      <NoListings
+        title="Search is unavailable right now"
+        description="Please try again in a moment."
+        action={{ href: "/", label: "Browse all stays" }}
+      />
+    );
+  }
 
   if (!listings?.length) {
     return (
@@ -67,7 +97,11 @@ async function ShowSearchResults({ searchParams, userId }: { searchParams: Searc
   );
 }
 
-export default async function SearchPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
   const userProfile = await getClientUserProfile();
   const params = (await searchParams) || {};
 
@@ -76,9 +110,14 @@ export default async function SearchPage({ searchParams }: { searchParams?: Prom
       <MapFilterItems />
       <div className="page-container">
         <div className="pb-2 pt-8 sm:pt-10">
-          <h1 className="font-display text-2xl font-medium tracking-tight sm:text-3xl">Search results</h1>
+          <h1 className="font-display text-2xl font-medium tracking-tight sm:text-3xl">
+            Search results
+          </h1>
         </div>
-        <Suspense key={JSON.stringify(params)} fallback={<ListingGridSkeleton />}>
+        <Suspense
+          key={JSON.stringify(params)}
+          fallback={<ListingGridSkeleton />}
+        >
           <ShowSearchResults searchParams={params} userId={userProfile?.id} />
         </Suspense>
       </div>

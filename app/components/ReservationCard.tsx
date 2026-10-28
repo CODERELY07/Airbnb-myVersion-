@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatPrice, getNights, PAYMENT_UNAVAILABLE_MESSAGE } from "@/lib/utils";
@@ -46,7 +47,8 @@ export default function ReservationCard({
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listingId, checkIn: checkIn.toISOString(), checkOut: checkOut.toISOString() }),
+        // calendar days; the server turns them into Manila midnight
+        body: JSON.stringify({ listingId, checkIn: format(checkIn, "yyyy-MM-dd"), checkOut: format(checkOut, "yyyy-MM-dd") }),
       });
       const data = await res.json().catch(() => ({}));
       const checkoutUrl = data?.data?.attributes?.redirect?.checkout_url;

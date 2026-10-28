@@ -30,13 +30,17 @@ export function UpdateListingCard(props: Omit<ListingCardShellProps, "action">) 
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
+    setIsDeleting(true);
+    setError(null);
     try {
-      setIsDeleting(true);
-      setError(null);
-      await deleteListing(props.listingId); // redirects on success
+      const result = await deleteListing(props.listingId);
+      if (result.error) {
+        setError(result.error);
+        setIsDeleting(false);
+        return;
+      }
+      setIsDeleteDialogOpen(false); // the list refreshes without this card
     } catch (err) {
-      // Next.js redirects are thrown as errors: let them through
-      if ((err as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT")) throw err;
       console.error("Failed to delete listing:", err);
       setError("Could not delete this listing. Please try again.");
       setIsDeleting(false);

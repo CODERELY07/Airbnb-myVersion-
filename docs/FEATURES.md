@@ -210,18 +210,21 @@ To add a category, see [recipe A](#a-add-a-new-category).
 **What it does:** pick dates → **Reserve with GCash** → pay on PayMongo → the booking is confirmed.
 
 **How it works**
-1. `ReservationCard` sends only `{ listingId, checkIn, checkOut }` to `POST /api/payments`.
-2. The server checks: logged in, not your own listing, valid dates (max 90 nights, not in the past), not already booked. Then it **calculates the price itself**, saves an unpaid reservation and creates a PayMongo GCash source.
-3. The guest pays on GCash, then returns to `/payment/success`, which calls `POST /api/payments/verify`. The server checks with PayMongo, collects the payment and sets `isPaid = true` (service role key).
-4. If they cancel, `/payment/failed` deletes the unpaid reservation.
-5. An unpaid reservation only blocks the dates for **30 minutes** (`PENDING_PAYMENT_MINUTES`).
-6. **No PayMongo keys:** `isPaymentEnabled()` is false, the button is disabled and shows *"Online payment is not available right now."*
+1. `ReservationCard` sends only `{ listingId, checkIn, checkOut }` as calendar days (`"2026-11-10"`) to `POST /api/payments`.
+2. The server checks: logged in, not your own listing, valid dates (max 90 nights, not in the past), at most 2 unpaid bookings per guest, not already booked. Then it **calculates the price itself**, saves an unpaid reservation and creates a PayMongo GCash source.
+3. The guest pays on GCash. **Two paths confirm it** (whichever comes first): PayMongo calls `/api/payments/webhook`, and the guest's browser returns to `/payment/success`, which calls `/api/payments/verify`. Both use `confirmReservationPayment()`: check the amount, charge once, set `isPaid = true`.
+4. If someone else paid for the same dates a moment earlier, the database refuses the second booking and the payment is **refunded automatically**.
+5. If they cancel, `/payment/failed` deletes the unpaid reservation.
+6. An unpaid reservation only blocks the dates for **30 minutes** (`PENDING_PAYMENT_MINUTES`). The checkout day is free for the next guest's check-in.
+7. **No PayMongo keys:** `isPaymentEnabled()` is false, the button is disabled and shows *"Online payment is not available right now."*
 
 | File | Role |
 |---|---|
 | `app/components/ReservationCard.tsx` | Booking card and the button states |
 | `app/api/payments/route.ts` | Validates, prices, creates the reservation and GCash source |
-| `app/api/payments/verify/route.ts` | Confirms with PayMongo, marks as paid |
+| `app/api/payments/verify/route.ts` | Guest returned: confirm the payment |
+| `app/api/payments/webhook/route.ts` | PayMongo event: confirm the payment (signed) |
+| `lib/paymongo.ts` | PayMongo client, `confirmReservationPayment`, `refundPayment`, webhook signature check |
 | `app/payment/success/page.tsx`, `failed/page.tsx` | Return pages |
 | `app/components/StatusCard.tsx` | Success / error card |
 | `utils/supabase/admin.ts` | Service-role client (server only) |
@@ -230,7 +233,18 @@ To add a category, see [recipe A](#a-add-a-new-category).
 
 ---
 
-## 9. Reservations page
+## 9. Reservations and guest bookings
+
+**Hosts:** `/bookings` (menu → *Guest bookings*) lists paid bookings of your listings, upcoming and past,
+with the guest's name, dates, nights and amount, plus the total booked.
+
+| File | Role |
+|---|---|
+| `app/bookings/page.tsx`, `loading.tsx` | Host bookings page |
+| `trpc/routers/listings.ts` | `getHostBookings` (host from the session, not from input) |
+| `supabase/schema.sql` | `reservation_select_host` policy |
+
+### Reservations page (guests)
 
 **What it does:** `/reservations` lists your **paid** stays with their dates.
 

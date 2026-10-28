@@ -165,7 +165,7 @@ The trigger creates the `public.users` row.
 service role key. If the password env is missing, the modal shows *"Demo accounts are not available right now."*
 
 ### Create a listing
-1. **Airbnb your Home** (`NavUser`) calls `createListing.createListing`. It reuses your last
+1. **List your home** (`NavUser`) calls `createListing.createListing`. It reuses your last
    unfinished listing or inserts a new empty one, then sends you to the next step.
 2. `/create/[id]/structure` → `createCategoryAction` sets `categoryName` and `addedCategory`.
 3. `/create/[id]/description` → `createDescription` uploads the photo to storage and saves the details.

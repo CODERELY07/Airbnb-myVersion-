@@ -44,11 +44,11 @@ There are three ways the app reads and writes data. Every feature uses one or mo
 | **Client Component → `trpc.*.useQuery / useMutation`** | Interactive parts in the browser | the calendar loads booked dates with `trpc.listings.fetchReservation.useQuery()` |
 | **`<form action={serverAction}>`** | Forms | the create steps post to `createDescription` in `lib/supabase/listings.ts` |
 
-All three end up in `trpc/routers/listings.ts`, which talks to Supabase as the logged-in user.
+All three end up in a procedure in `trpc/routers/` (one small file per topic), which talks to Supabase as the logged-in user.
 **Row Level Security** (`supabase/schema.sql`) decides what each user may read or change.
 
 ```
-page.tsx / component  ──►  lib/supabase/listings.ts (Server Action)  ──►  trpc/routers/listings.ts  ──►  Supabase
+page.tsx / component  ──►  lib/supabase/listings.ts (Server Action)  ──►  trpc/routers/…  ──►  Supabase
                      └────────────── serverCaller / trpc hooks ──────────────┘
 ```
 
@@ -93,13 +93,13 @@ See [GOOGLE_AUTH_SETUP.md](GOOGLE_AUTH_SETUP.md).
 | File | Role |
 |---|---|
 | `app/page.tsx` | Home page, heading and grid |
-| `app/components/MapFilterItems.tsx` | Category bar (links to `/?filter=…`) |
+| `app/components/CategoryBar.tsx` | Category bar (links to `/?filter=…`) |
 | `app/lib/categoryItems.ts` | The list of categories: name, title, description, icon |
 | `app/components/ListingGrid.tsx` | Responsive grid and loading skeleton |
 | `app/components/ListingCard.tsx` | Card with the favorite heart |
 | `app/components/ListingCardShell.tsx` | The card's look (photo, title, location, price) |
-| `app/lib/locaitonHelpers.ts` | `getListingLocation()` turns codes into "El Nido, Palawan" (server only) |
-| `trpc/routers/listings.ts` | `fetchListings` |
+| `app/lib/locationHelpers.ts` | `getListingLocation()` turns codes into "El Nido, Palawan" (server only) |
+| `trpc/routers/listings/browse.ts` | `fetchListings` |
 
 To add a category, see [recipe A](#a-add-a-new-category).
 
@@ -120,7 +120,7 @@ To add a category, see [recipe A](#a-add-a-new-category).
 | `app/components/SearchBar.tsx` | Where / When / Who bar with popups |
 | `app/components/StayCalendar.tsx` | Date range picker (shared with the listing page) |
 | `app/search/page.tsx` | Results page |
-| `trpc/routers/listings.ts` | `searchListings`, `location.listUnique` |
+| `trpc/routers/listings/browse.ts`, `trpc/routers/location.ts` | `searchListings`, `location.listUnique` |
 | `lib/utils.ts` | `activeReservationFilter()`: which reservations still block dates |
 
 ---
@@ -138,8 +138,8 @@ To add a category, see [recipe A](#a-add-a-new-category).
 | `app/components/ReservationCard.tsx` | Price, dates, total and the Reserve button |
 | `app/components/StayCalendar.tsx` | Calendar with booked dates disabled |
 | `app/components/Avatar.tsx` | Host photo, or initials |
-| `app/lib/locaitonHelpers.ts` | `getListingAddress()` |
-| `trpc/routers/listings.ts` | `getListingData`, `fetchReservation` |
+| `app/lib/locationHelpers.ts` | `getListingAddress()` |
+| `trpc/routers/listings/browse.ts`, `reservations.ts` | `getListingData`, `fetchReservation` |
 
 ---
 
@@ -154,7 +154,7 @@ To add a category, see [recipe A](#a-add-a-new-category).
 | `app/components/ListingCard.tsx` | Heart form |
 | `app/components/SubmitButtons.tsx` | `FavoriteButton` (shows a spinner while saving) |
 | `lib/supabase/listings.ts` | `addToFavorite`, `deleteFromFavorite` |
-| `trpc/routers/listings.ts` | `addToFavorite`, `removeFromFavorite`, `fetchFavListings` |
+| `trpc/routers/listings/favorites.ts` | `addToFavorite`, `removeFromFavorite`, `fetchFavListings` |
 | `app/favorites/page.tsx`, `loading.tsx` | Favorites page |
 
 ---
@@ -182,7 +182,7 @@ To add a category, see [recipe A](#a-add-a-new-category).
 | `app/components/StepHeader.tsx` | "Step X of 3" heading and error box |
 | `app/components/CreationBottomBar.tsx` | Fixed footer: progress line, Cancel, Next |
 | `lib/supabase/listings.ts` | `createCategoryAction`, `createDescription`, `createLocation` |
-| `trpc/routers/listings.ts` | `createListing`, `createCategory`, `createDescription`, `createLocation` |
+| `trpc/routers/createListing.ts` | `createListing`, `createCategory`, `createDescription`, `createLocation` |
 
 ---
 
@@ -201,7 +201,7 @@ To add a category, see [recipe A](#a-add-a-new-category).
 | `app/edit/[id]/description/page.tsx` | Edit details (photo optional) |
 | `app/edit/[id]/address/page.tsx` | Edit address (prefilled) |
 | `lib/supabase/listings.ts` | `getOwnListing`, `updateListingCategory`, `updateListingDescription`, `updateListingLocation`, `deleteListing` |
-| `trpc/routers/listings.ts` | `updateCategory`, `updateListing`, `updateLocation`, `deleteListing` |
+| `trpc/routers/listings/manage.ts` | `updateCategory`, `updateListing`, `updateLocation`, `deleteListing` |
 
 ---
 
@@ -241,7 +241,7 @@ with the guest's name, dates, nights and amount, plus the total booked.
 | File | Role |
 |---|---|
 | `app/bookings/page.tsx`, `loading.tsx` | Host bookings page |
-| `trpc/routers/listings.ts` | `getHostBookings` (host from the session, not from input) |
+| `trpc/routers/listings/reservations.ts` | `getHostBookings` (host from the session, not from input) |
 | `supabase/schema.sql` | `reservation_select_host` policy |
 
 ### Reservations page (guests)
@@ -252,7 +252,7 @@ with the guest's name, dates, nights and amount, plus the total booked.
 |---|---|
 | `app/reservations/page.tsx`, `loading.tsx` | The page |
 | `lib/supabase/listings.ts` | `getReservationListings` |
-| `trpc/routers/listings.ts` | `getReservationListings` (only `isPaid = true`) |
+| `trpc/routers/listings/reservations.ts` | `getReservationListings` (only `isPaid = true`) |
 
 ---
 
@@ -287,7 +287,7 @@ Running `demo:listings` again replaces only listings whose photo is under `demo/
 | `app/globals.css` | Colors, shadows, radius, `page-container` |
 | `app/components/Navbar.tsx` | Sticky header: logo, search, account menu |
 | `app/components/PageHeader.tsx` | Title and subtitle at the top of a page |
-| `app/components/NoListings.tsx` | Empty state (icon, text, optional button) |
+| `app/components/EmptyState.tsx` | Empty state (icon, text, optional button) |
 | `app/components/ListingGrid.tsx` | Grid, grid skeleton, page skeleton |
 | `components/ui/*` | shadcn/ui building blocks (button, input, select, dialog, calendar…) |
 
@@ -324,7 +324,7 @@ Example: a `wifi` yes/no field.
    </label>
    ```
 3. **Save it:** in `lib/supabase/listings.ts`, read `formData.get("wifi") === "on"` in `createDescription` and `updateListingDescription`, and pass it on.
-4. **tRPC:** add `wifi: z.boolean()` to the input of `createDescription` and `updateListing` in `trpc/routers/listings.ts` and include it in the `.update({...})`.
+4. **tRPC:** add `wifi: z.boolean()` to the input of `createDescription` (`trpc/routers/createListing.ts`) and `updateListing` (`trpc/routers/listings/manage.ts`); both take `listingDetailsSchema`, so adding the field to `lib/validation.ts` covers both.
 5. **Show it:** add it to the `facts` list in `app/components/ListingClient.tsx`.
 6. **Search (optional):** add a param in `SearchBar.tsx`, read it in `app/search/page.tsx`, filter in `searchListings`.
 
@@ -353,7 +353,7 @@ Example: a `wifi` yes/no field.
 
 ## D. Add a new tRPC query or mutation
 
-1. Add it to a router in `trpc/routers/listings.ts`:
+1. Add it to the topic file it belongs to, e.g. `trpc/routers/listings/browse.ts`:
    ```ts
    countListings: baseProcedure
      .input(z.object({ userId: z.string() }))
@@ -363,14 +363,14 @@ Example: a `wifi` yes/no field.
          .from("listings")
          .select("id", { count: "exact", head: true })
          .eq("userId", input.userId);
-       if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+       throwIfError(error); // from ../helpers
        return count ?? 0;
      }),
    ```
 2. Use it:
    - On the server: `await serverCaller.listings.countListings({ userId })`
    - In the browser: `trpc.listings.countListings.useQuery({ userId })`
-3. A new router must also be added to `trpc/routers/_app.ts`.
+3. Procedures in `trpc/routers/listings/*.ts` are joined automatically by `trpc/routers/listings.ts`. A brand-new group needs its own router file, added to `trpc/routers/_app.ts`.
 
 > Never trust a `userId` sent from the browser for security. RLS protects the data, but when it matters, read the user on the server with `supabase.auth.getUser()`.
 

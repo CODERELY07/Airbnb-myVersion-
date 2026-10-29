@@ -54,7 +54,7 @@ app/
   api/trpc/[trpc]/route.ts    tRPC HTTP handler
   components/                 UI pieces. Shared building blocks:
                                 ListingCardShell / ListingCard / UpdateListingCard, ListingGrid,
-                                PageHeader, NoListings (empty state), StayCalendar (search + booking),
+                                PageHeader, EmptyState (empty state), StayCalendar (search + booking),
                                 DescriptionFields + AddressFields (create & edit), StepHeader,
                                 CreationBottomBar, StatusCard (payment pages), Avatar
   lib/                        Categories, countries, PSGC location helpers
@@ -71,8 +71,15 @@ scripts/
   demo-listings.json          Demo listing data: title, price, category, PSGC codes, photo id
 trpc/
   init.ts  server.tsx  client.tsx  query-client.ts
-  routers/_app.ts             Root router
-  routers/listings.ts         All listing, favorite and reservation procedures
+  routers/_app.ts             Root router: createListing, createCategory, listings, location
+  routers/createListing.ts    "List your home" steps
+  routers/listings.ts         Joins the files in routers/listings/ into trpc.listings
+  routers/listings/browse.ts        fetchListings, getListingData, searchListings
+  routers/listings/favorites.ts     fetchFavListings, addToFavorite, removeFromFavorite
+  routers/listings/reservations.ts  fetchReservation, getReservationListings, getHostBookings
+  routers/listings/manage.ts        updateCategory, updateListing, updateLocation, deleteListing
+  routers/location.ts         Provinces for the search box
+  routers/helpers.ts          throwIfError(), publishedListings()
 utils/supabase/
   server.ts                   Server client (cookies)
   client.ts                   Browser client
@@ -215,7 +222,7 @@ The reservations page only shows paid bookings.
 
 ## 5. tRPC API
 
-Defined in `trpc/routers/listings.ts`, mounted in `trpc/routers/_app.ts`.
+Defined in `trpc/routers/` (one small file per topic), mounted in `trpc/routers/_app.ts`.
 
 | Path | Type | Purpose |
 |---|---|---|

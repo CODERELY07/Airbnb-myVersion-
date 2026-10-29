@@ -6,7 +6,7 @@ import { serverCaller } from "@/trpc/server";
 import { getClientUserProfile } from "@/lib/supabase/auth";
 import { formatPrice, getImageUrl } from "@/lib/utils";
 import { Avatar } from "../components/Avatar";
-import { NoListings } from "../components/NoListings";
+import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 
 const day: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric", timeZone: "Asia/Manila" };
@@ -35,7 +35,7 @@ export default async function BookingsPage() {
       </PageHeader>
 
       {bookings.length === 0 ? (
-        <NoListings
+        <EmptyState
           icon={CalendarDays}
           title="No bookings yet"
           description="When a guest books and pays for one of your homes, it shows up here."

@@ -4,7 +4,7 @@ import { getReservationListings } from "@/lib/supabase/listings";
 import { getClientUserProfile } from "@/lib/supabase/auth";
 import { ListingCard } from "../components/ListingCard";
 import { ListingGrid } from "../components/ListingGrid";
-import { NoListings } from "../components/NoListings";
+import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
 
 const shortDate: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
@@ -22,7 +22,7 @@ export default async function Reservation() {
       <PageHeader title="Reservations" description="Your confirmed, paid stays." />
 
       {reservations.length === 0 ? (
-        <NoListings
+        <EmptyState
           icon={CalendarCheck}
           title="No reservations yet"
           description="When you book and pay for a stay, it shows up here."

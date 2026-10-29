@@ -1,17 +1,14 @@
+import { createTRPCRouter } from "../init";
+import { createCategoryRouter, createListingRouter } from "./createListing";
+import { listingsRouter } from "./listings";
+import { locationRouter } from "./location";
 
-import { z } from 'zod';
-import { baseProcedure, createTRPCRouter } from '../init';
-import { getClientUserProfile } from '@/lib/supabase/auth';
-import { createClient } from '@/utils/supabase/server';
-import { authRouter } from './auth';
-import { CategoryRouter, homeRouter, ListingsRouter, locationRouter } from './listings';
-
+// The whole API. Paths are used as trpc.<group>.<procedure>, e.g. trpc.listings.fetchListings
 export const appRouter = createTRPCRouter({
-  greetings: authRouter,
-  createListing: homeRouter,
-  createCategory: CategoryRouter,
-  listings: ListingsRouter,
-  location: locationRouter,
+  createListing: createListingRouter, // steps 2 and 3 of "List your home"
+  createCategory: createCategoryRouter, // step 1
+  listings: listingsRouter, // browse, favorites, bookings, edit, delete
+  location: locationRouter, // provinces for the search box
 });
-// export type definition of API
+
 export type AppRouter = typeof appRouter;

@@ -1,19 +1,19 @@
 import { Suspense } from "react";
 import { serverCaller } from "@/trpc/server";
 import { getClientUserProfile } from "@/lib/supabase/auth";
-import { MapFilterItems } from "./components/MapFilterItems";
+import { CategoryBar } from "./components/CategoryBar";
 import { ListingCard } from "./components/ListingCard";
 import { ListingGrid, ListingGridSkeleton } from "./components/ListingGrid";
-import { NoListings } from "./components/NoListings";
+import { EmptyState } from "./components/EmptyState";
 import { getCategory } from "./lib/categoryItems";
-import { getListingLocation } from "./lib/locaitonHelpers";
+import { getListingLocation } from "./lib/locationHelpers";
 
 async function ShowListings({ filter, userId }: { filter?: string; userId?: string }) {
   const listings = await serverCaller.listings.fetchListings({ searchParams: filter });
 
   if (!listings?.length) {
     return (
-      <NoListings
+      <EmptyState
         title="No stays in this category yet"
         description="Try another category, or browse everything."
         action={{ href: "/", label: "Show all stays" }}
@@ -48,7 +48,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ f
 
   return (
     <>
-      <MapFilterItems />
+      <CategoryBar />
       <div className="page-container">
         <div className="pb-6 pt-8 sm:pt-10">
           <h1 className="font-display text-2xl font-medium tracking-tight sm:text-3xl">

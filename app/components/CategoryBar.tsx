@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 // Category filter bar. Always filters the home page
 // (search results don't support categories).
-export function MapFilterItems() {
+export function CategoryBar() {
   const active = useSearchParams().get("filter");
 
   return (

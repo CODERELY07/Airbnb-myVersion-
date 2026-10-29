@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import { serverCaller } from "@/trpc/server";
 import { getClientUserProfile } from "@/lib/supabase/auth";
-import { MapFilterItems } from "../components/MapFilterItems";
+import { CategoryBar } from "../components/CategoryBar";
 import { ListingCard } from "../components/ListingCard";
 import { ListingGrid, ListingGridSkeleton } from "../components/ListingGrid";
-import { NoListings } from "../components/NoListings";
-import { getListingLocation } from "../lib/locaitonHelpers";
+import { EmptyState } from "../components/EmptyState";
+import { getListingLocation } from "../lib/locationHelpers";
 import { DAY_PATTERN } from "@/lib/utils";
 
 interface SearchParams {
@@ -54,7 +54,7 @@ async function ShowSearchResults({
 
   if (listings === null) {
     return (
-      <NoListings
+      <EmptyState
         title="Search is unavailable right now"
         description="Please try again in a moment."
         action={{ href: "/", label: "Browse all stays" }}
@@ -64,7 +64,7 @@ async function ShowSearchResults({
 
   if (!listings?.length) {
     return (
-      <NoListings
+      <EmptyState
         title="No matching stays"
         description="Try other dates, fewer guests or another province."
         action={{ href: "/", label: "Browse all stays" }}
@@ -107,7 +107,7 @@ export default async function SearchPage({
 
   return (
     <>
-      <MapFilterItems />
+      <CategoryBar />
       <div className="page-container">
         <div className="pb-2 pt-8 sm:pt-10">
           <h1 className="font-display text-2xl font-medium tracking-tight sm:text-3xl">

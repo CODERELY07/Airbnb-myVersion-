@@ -4,9 +4,9 @@ import { serverCaller } from "@/trpc/server";
 import { getClientUserProfile } from "@/lib/supabase/auth";
 import { ListingCard } from "../components/ListingCard";
 import { ListingGrid } from "../components/ListingGrid";
-import { NoListings } from "../components/NoListings";
+import { EmptyState } from "../components/EmptyState";
 import { PageHeader } from "../components/PageHeader";
-import { getListingLocation } from "../lib/locaitonHelpers";
+import { getListingLocation } from "../lib/locationHelpers";
 
 export default async function FavoriteRoute() {
   const userProfile = await getClientUserProfile();
@@ -21,7 +21,7 @@ export default async function FavoriteRoute() {
       <PageHeader title="Favorites" description="Stays you've saved. Tap the heart again to remove one." />
 
       {favorites.length === 0 ? (
-        <NoListings
+        <EmptyState
           icon={Heart}
           title="No favorites yet"
           description="Tap the heart on any stay to save it here."

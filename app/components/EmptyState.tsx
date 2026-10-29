@@ -9,7 +9,7 @@ interface EmptyStateProps {
   action?: { href: string; label: string };
 }
 
-export function NoListings({
+export function EmptyState({
   title = "Nothing here yet",
   description,
   icon: Icon = SearchX,

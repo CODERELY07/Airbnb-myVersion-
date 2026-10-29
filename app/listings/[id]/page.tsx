@@ -2,8 +2,8 @@ import { getListingData } from "@/lib/supabase/listings";
 import { getClientUserProfile } from "@/lib/supabase/auth";
 import { isPaymentEnabled } from "@/lib/utils";
 import ListingClient from "@/app/components/ListingClient";
-import { NoListings } from "@/app/components/NoListings";
-import { getListingAddress } from "@/app/lib/locaitonHelpers";
+import { EmptyState } from "@/app/components/EmptyState";
+import { getListingAddress } from "@/app/lib/locationHelpers";
 
 export default async function ListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,7 +12,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
   if (!data.listing) {
     return (
       <div className="page-container pt-12">
-        <NoListings
+        <EmptyState
           title="This stay isn't available"
           description="It may have been removed by the host."
           action={{ href: "/", label: "Browse stays" }}
